@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_ALERT_CHAT_ID: str = ""
 
+    # Quotations (external API)
+    QUOTATIONS_API_URL: str = "https://cotizaciones.protegrt.com/api/v1"
+    QUOTATIONS_API_KEY: str = ""
+    QUOTATIONS_API_TIMEOUT: int = 10
+
     model_config = {"env_file": ".env", "case_sensitive": True}
 
 
