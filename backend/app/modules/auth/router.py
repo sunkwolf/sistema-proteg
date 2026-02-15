@@ -56,8 +56,16 @@ async def login(
 
     client_ip = request.client.host if request.client else "unknown"
 
-    # Rate limit check
-    if await service._check_rate_limit(data.username, client_ip):
+    # Rate limit check (also records the attempt so lockout counter advances)
+    is_limited, is_locked = await service.check_rate_limit_and_lockout(
+        data.username, client_ip
+    )
+    if is_locked:
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail="Cuenta bloqueada temporalmente por demasiados intentos fallidos.",
+        )
+    if is_limited:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Demasiados intentos de login. Intenta mas tarde.",

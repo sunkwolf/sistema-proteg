@@ -25,19 +25,34 @@ class AuthService:
         self.redis = redis_client
         self.db = db
 
+    async def check_rate_limit_and_lockout(
+        self, username: str, client_ip: str
+    ) -> tuple[bool, bool]:
+        """Check rate-limit and lockout status. Returns (is_rate_limited, is_locked)."""
+        # Check account lockout first (hard block, independent of rate limit)
+        lockout_key = f"auth:lockout:{username}"
+        if await self.redis.exists(lockout_key):
+            return False, True
+
+        # Check rate limit (soft block per window)
+        user_count = await self.redis.get(f"auth:fail:user:{username}")
+        if user_count and int(user_count) >= settings.LOGIN_RATE_LIMIT_USER:
+            return True, False
+
+        ip_count = await self.redis.get(f"auth:fail:ip:{client_ip}")
+        if ip_count and int(ip_count) >= settings.LOGIN_RATE_LIMIT_IP:
+            return True, False
+
+        return False, False
+
     async def authenticate(
         self, username: str, password: str, client_ip: str
     ) -> dict | None:
         """
         Authenticate user, return tokens + user info, or None if invalid.
-        Handles: rate limiting check, password verify, rehash, refresh token in Redis.
+        Handles: password verify, rehash, refresh token in Redis.
+        Note: rate-limit/lockout checks are done in the router BEFORE this method.
         """
-        # Check account lockout
-        lockout_key = f"auth:lockout:{username}"
-        if await self.redis.exists(lockout_key):
-            logger.warning("Account locked out: %s", username)
-            return None
-
         user = await self.repo.get_user_by_username(username)
         if user is None or not user.is_active:
             await self._record_failed_attempt(username, client_ip)
@@ -168,18 +183,6 @@ class AuthService:
                 username,
                 user_count,
             )
-
-    async def _check_rate_limit(self, username: str, client_ip: str) -> bool:
-        """Return True if request should be rate-limited."""
-        user_count = await self.redis.get(f"auth:fail:user:{username}")
-        if user_count and int(user_count) >= settings.LOGIN_RATE_LIMIT_USER:
-            return True
-
-        ip_count = await self.redis.get(f"auth:fail:ip:{client_ip}")
-        if ip_count and int(ip_count) >= settings.LOGIN_RATE_LIMIT_IP:
-            return True
-
-        return False
 
     async def _revoke_family(self, family_id: str) -> None:
         """Revoke all refresh tokens in a family (token reuse detection)."""
