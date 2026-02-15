@@ -60,6 +60,7 @@ def _include_routers(app: FastAPI):
     from app.modules.renewals.router import router as renewals_router
     from app.modules.incidents.router import router as incidents_router
     from app.modules.tow_services.router import router as tow_services_router
+    from app.modules.endorsements.router import router as endorsements_router
 
     app.include_router(auth_router, prefix=f"{prefix}/auth", tags=["Auth"])
     app.include_router(employees_router, prefix=f"{prefix}/employees", tags=["Employees"])
@@ -75,6 +76,7 @@ def _include_routers(app: FastAPI):
     app.include_router(renewals_router, prefix=f"{prefix}/renewals", tags=["Renewals"])
     app.include_router(incidents_router, prefix=f"{prefix}/incidents", tags=["Incidents"])
     app.include_router(tow_services_router, prefix=f"{prefix}/tow-services", tags=["Tow Services"])
+    app.include_router(endorsements_router, prefix=f"{prefix}/endorsements", tags=["Endorsements"])
 
 
 app = create_app()
