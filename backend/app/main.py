@@ -66,6 +66,7 @@ def _include_routers(app: FastAPI):
     from app.modules.notifications.router import router as notifications_router
     from app.modules.reports.router import router as reports_router
     from app.modules.dashboard.router import router as dashboard_router
+    from app.modules.admin.router import router as admin_router
 
     app.include_router(auth_router, prefix=f"{prefix}/auth", tags=["Auth"])
     app.include_router(employees_router, prefix=f"{prefix}/employees", tags=["Employees"])
@@ -87,6 +88,7 @@ def _include_routers(app: FastAPI):
     app.include_router(notifications_router, prefix=f"{prefix}/notifications", tags=["Notifications"])
     app.include_router(reports_router, prefix=f"{prefix}/reports", tags=["Reports"])
     app.include_router(dashboard_router, prefix=f"{prefix}/dashboard", tags=["Dashboard"])
+    app.include_router(admin_router, prefix=f"{prefix}/admin", tags=["Admin"])
 
 
 app = create_app()

@@ -91,6 +91,7 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 23. `f512074` — feat: modulo notificaciones WhatsApp + Telegram + historial + stats
 24. `30ac5bc` — feat: modulo reportes Excel (7 endpoints)
 25. `4d71167` — fix: corregir 9 bugs encontrados por code review
+26. `00a5216` — feat: modulo dashboard (general, ventas, cobranza, siniestros)
 
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
@@ -136,7 +137,7 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 1.23b | ~~Implementar modulo notificaciones - Telegram~~ | TERMINADA | Claude | Bot API client para alertas. Integrado con modulo notificaciones |
 | 1.24 | ~~Implementar modulo reportes~~ | TERMINADA | Claude | 7 endpoints Excel con openpyxl. SIN export de clientes. Commit `30ac5bc` |
 | 1.25 | ~~Implementar modulo dashboard~~ | TERMINADA | Claude | 4 endpoints: general, ventas, cobranza, siniestros. KPIs, alertas, actividad |
-| 1.26 | Implementar modulo administracion | PENDIENTE | Claude | Config, audit log, gestion roles/permisos |
+| 1.26 | ~~Implementar modulo administracion~~ | TERMINADA | Claude | 9 endpoints: audit log, roles CRUD, permisos, departamentos, system info |
 | 1.27 | Implementar StatusUpdater (job diario Celery) | PENDIENTE | Claude | Corre a medianoche. Actualiza pagos y polizas |
 | 1.28 | Implementar sistema de backup pgBackRest | PENDIENTE | Claude | Full semanal + diff diario + WAL continuo |
 | 1.29 | Tests unitarios e integracion backend | PENDIENTE | Claude | pytest + httpx async + factory_boy |
