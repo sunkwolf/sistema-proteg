@@ -6,6 +6,7 @@ from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit import ApprovalRequest
+from app.models.business import Policy
 from app.models.payments import Payment, PaymentProposal
 
 
@@ -113,7 +114,21 @@ class AuthorizationRepository:
 
         return requests, total
 
+    async def create_approval(self, request: ApprovalRequest) -> ApprovalRequest:
+        self.session.add(request)
+        await self.session.flush()
+        await self.session.refresh(request)
+        return request
+
     async def update_approval(self, request: ApprovalRequest) -> ApprovalRequest:
         await self.session.flush()
         await self.session.refresh(request)
         return request
+
+    # ── Policy ────────────────────────────────────────────────────────
+
+    async def get_policy(self, policy_id: int) -> Policy | None:
+        result = await self.session.execute(
+            select(Policy).where(Policy.id == policy_id)
+        )
+        return result.scalar_one_or_none()

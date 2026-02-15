@@ -8,8 +8,10 @@ from decimal import ROUND_HALF_UP, Decimal
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.audit import ApprovalRequest
 from app.models.business import Policy
 from app.models.collections import Card
+from app.models.enums import ApprovalRequestType
 from app.models.payments import Payment
 from app.modules.policies.repository import PolicyRepository
 from app.modules.policies.schemas import (
@@ -28,6 +30,7 @@ from app.modules.policies.schemas import (
 
 class PolicyService:
     def __init__(self, db: AsyncSession):
+        self.db = db
         self.repo = PolicyRepository(db)
 
     # ── Serialization ─────────────────────────────────────────────────
@@ -234,6 +237,24 @@ class PolicyService:
             seller_id=data.seller_id,
         )
         await self.repo.create_card(card)
+
+        # ── Create approval request (pendiente de autorizacion) ───
+        approval = ApprovalRequest(
+            request_type=ApprovalRequestType.POLICY_SUBMISSION,
+            entity_type="policy",
+            entity_id=policy.id,
+            payload={
+                "folio": folio,
+                "client_id": data.client_id,
+                "vehicle_id": data.vehicle_id,
+                "coverage_id": data.coverage_id,
+                "prima_total": str(data.prima_total) if data.prima_total else None,
+                "payment_plan": data.payment_plan,
+            },
+            submitted_by_user_id=current_user_id or 0,
+        )
+        self.db.add(approval)
+        await self.db.flush()
 
         summary = await self._build_payments_summary(policy.id)
         return self._to_response(policy, payments_summary=summary)

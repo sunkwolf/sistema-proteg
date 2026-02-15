@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.audit import ApprovalRequest
+from app.models.enums import ApprovalRequestType, ApprovalStatusType
 from app.models.payments import PaymentProposal
 from app.modules.authorization.repository import AuthorizationRepository
 from app.modules.authorization.schemas import (
@@ -216,6 +218,13 @@ class AuthorizationService:
         approval.review_notes = data.review_notes
         approval.reviewed_at = datetime.now(timezone.utc)
 
+        # Side effect: if policy_submission, activate the policy
+        req_type = approval.request_type
+        if hasattr(req_type, "value"):
+            req_type = req_type.value
+        if req_type == "policy_submission" and approval.entity_id:
+            await self._activate_policy(approval.entity_id)
+
         return await self.repo.update_approval(approval)
 
     async def reject_request(
@@ -242,4 +251,26 @@ class AuthorizationService:
         approval.review_notes = data.review_notes
         approval.reviewed_at = datetime.now(timezone.utc)
 
+        # Side effect: if policy_submission, cancel the policy
+        req_type = approval.request_type
+        if hasattr(req_type, "value"):
+            req_type = req_type.value
+        if req_type == "policy_submission" and approval.entity_id:
+            policy = await self.repo.get_policy(approval.entity_id)
+            if policy:
+                policy.status = "cancelled"
+
         return await self.repo.update_approval(approval)
+
+    # ── Helpers ───────────────────────────────────────────────────────
+
+    async def _activate_policy(self, policy_id: int) -> None:
+        """Set a policy to active or pre_effective based on its dates."""
+        policy = await self.repo.get_policy(policy_id)
+        if policy is None:
+            return
+        today = date.today()
+        if policy.effective_date and today < policy.effective_date:
+            policy.status = "pre_effective"
+        else:
+            policy.status = "active"

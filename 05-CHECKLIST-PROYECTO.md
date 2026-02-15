@@ -117,7 +117,7 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 1.10 | ~~Implementar modulo coberturas~~ | TERMINADA | Claude | 6 endpoints: CRUD + busqueda + esquemas de pago. AMPLIA solo 101/103/105, logica cilindraje motos |
 | 1.11a | ~~Implementar modulo polizas - CRUD y calculo de pagos~~ | TERMINADA | Claude | 6 endpoints: CRUD + folio lookup + cambiar vendedor. Auto-genera pagos y tarjeta |
 | 1.11b | Implementar maquina de estados de polizas | TERMINADA | Claude | StatusUpdater + update_single_policy_status on-demand. Commit 29 |
-| 1.11c | Implementar pendiente de autorizacion de polizas | PENDIENTE | Claude | Gerente aprueba polizas nuevas |
+| 1.11c | Implementar pendiente de autorizacion de polizas | TERMINADA | Claude | ApprovalRequest auto al crear poliza, approve→active, reject→cancelled. Commit 30 |
 | 1.12a | ~~Implementar modulo pagos - CRUD y edicion~~ | TERMINADA | Claude | 8 endpoints: CRUD + abono parcial + revertir + marcar problema. Validaciones fecha/delivery |
 | 1.12b | Implementar maquina de estados de pagos | TERMINADA | Claude | StatusUpdater batch + recalculo on-demand en PaymentService. Commit 29 |
 | 1.12c | Implementar contado a cuotas en pagos | TERMINADA | Claude | POST /payments/convert-to-installments. Commit 29 |
