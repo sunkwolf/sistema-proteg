@@ -87,6 +87,10 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 19. `578fa61` — feat: modulo gruas CRUD + proveedores + encuesta satisfaccion
 20. `5155a68` — feat: modulo endosos CRUD + aprobar/rechazar/aplicar + calculo costo
 21. `44df845` — feat: modulo promociones CRUD + reglas + aplicar/simular descuentos
+22. `355717b` — feat: modulo cotizaciones - proxy API externa validate/approve
+23. `f512074` — feat: modulo notificaciones WhatsApp + Telegram + historial + stats
+24. `30ac5bc` — feat: modulo reportes Excel (7 endpoints)
+25. `4d71167` — fix: corregir 9 bugs encontrados por code review
 
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
@@ -127,11 +131,11 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 1.19 | ~~Implementar modulo gruas~~ | TERMINADA | Claude | 9 endpoints: CRUD servicios + proveedores CRUD + encuesta satisfaccion |
 | 1.20 | ~~Implementar modulo endosos~~ | TERMINADA | Claude | 8 endpoints: CRUD + aprobar/rechazar/aplicar + calculo costo. 5 tipos, JSONB change_details |
 | 1.21 | ~~Implementar modulo promociones~~ | TERMINADA | Claude | 12 endpoints: CRUD promos + CRUD reglas + aplicar/simular + listar aplicaciones. 4 tipos descuento |
-| 1.22 | Implementar modulo cotizaciones (integracion) | PENDIENTE | Claude | Solo quote_external_id. Sin JOINs |
-| 1.23a | Implementar modulo notificaciones - WhatsApp | PENDIENTE | Claude | Evolution API. Plantillas, cola Celery |
-| 1.23b | Implementar modulo notificaciones - Telegram | PENDIENTE | Claude | Bot API. Alertas siniestros, admin |
-| 1.24 | Implementar modulo reportes | PENDIENTE | Claude | openpyxl. SIN export de lista de clientes |
-| 1.25 | Implementar modulo dashboard | PENDIENTE | Claude | Por departamento + principal |
+| 1.22 | ~~Implementar modulo cotizaciones (integracion)~~ | TERMINADA | Claude | 2 endpoints proxy: validate + approve. httpx a API externa. Sin JOINs |
+| 1.23a | ~~Implementar modulo notificaciones - WhatsApp~~ | TERMINADA | Claude | Evolution API client + send-overdue + send-reminders. Queue pattern con SentMessage |
+| 1.23b | ~~Implementar modulo notificaciones - Telegram~~ | TERMINADA | Claude | Bot API client para alertas. Integrado con modulo notificaciones |
+| 1.24 | ~~Implementar modulo reportes~~ | TERMINADA | Claude | 7 endpoints Excel con openpyxl. SIN export de clientes. Commit `30ac5bc` |
+| 1.25 | ~~Implementar modulo dashboard~~ | TERMINADA | Claude | 4 endpoints: general, ventas, cobranza, siniestros. KPIs, alertas, actividad |
 | 1.26 | Implementar modulo administracion | PENDIENTE | Claude | Config, audit log, gestion roles/permisos |
 | 1.27 | Implementar StatusUpdater (job diario Celery) | PENDIENTE | Claude | Corre a medianoche. Actualiza pagos y polizas |
 | 1.28 | Implementar sistema de backup pgBackRest | PENDIENTE | Claude | Full semanal + diff diario + WAL continuo |
