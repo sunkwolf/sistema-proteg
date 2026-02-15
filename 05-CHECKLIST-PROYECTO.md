@@ -76,6 +76,7 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 8. `ed6f672` — fix: correcciones code review + modulo clientes CRUD
 9. `3079aa2` — docs: actualizar checklist con tareas 1.7 y 1.8a terminadas
 10. `5a13939` — feat: modulos vehiculos y coberturas CRUD completos
+11. `4fed4dc` — feat: modulo polizas CRUD con generacion automatica de pagos
 
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
@@ -99,7 +100,7 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 1.8d | Implementar verificacion WhatsApp de clientes | PENDIENTE | Claude | Via Evolution API. No obligatorio |
 | 1.9 | ~~Implementar modulo vehiculos~~ | TERMINADA | Claude | 6 endpoints: CRUD + busqueda por serie/placas. Validacion claves 101-109, mapeo tipo, cilindraje motos |
 | 1.10 | ~~Implementar modulo coberturas~~ | TERMINADA | Claude | 6 endpoints: CRUD + busqueda + esquemas de pago. AMPLIA solo 101/103/105, logica cilindraje motos |
-| 1.11a | Implementar modulo polizas - CRUD y calculo de pagos | PENDIENTE | Claude | Vincular cliente+vehiculo+vendedor+cobertura |
+| 1.11a | ~~Implementar modulo polizas - CRUD y calculo de pagos~~ | TERMINADA | Claude | 6 endpoints: CRUD + folio lookup + cambiar vendedor. Auto-genera pagos y tarjeta |
 | 1.11b | Implementar maquina de estados de polizas | PENDIENTE | Claude | pre_effective→pending→active→morosa→expired/cancelled |
 | 1.11c | Implementar pendiente de autorizacion de polizas | PENDIENTE | Claude | Gerente aprueba polizas nuevas |
 | 1.12a | Implementar modulo pagos - CRUD y edicion | PENDIENTE | Claude | Solo depto Cobranza puede EDITAR pagos |
