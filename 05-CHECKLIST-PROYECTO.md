@@ -79,6 +79,7 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 11. `4fed4dc` — feat: modulo polizas CRUD con generacion automatica de pagos
 12. `7b166a0` — feat: modulo pagos CRUD + abonos parciales + revertir
 13. `adb4ac7` — feat: modulo autorizacion - propuestas de pago + aprobaciones genericas
+14. `91ce232` — feat: modulo recibos CRUD + memoria inspector
 
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
@@ -112,7 +113,7 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 1.13 | ~~Implementar panel de autorizacion unificado~~ | TERMINADA | Claude | 9 endpoints /authorization/*. Propuestas de pago + solicitudes genericas de aprobacion |
 | 1.14a | ~~Implementar modulo recibos - batch y asignacion~~ | TERMINADA | Claude | 9 endpoints: batch, assign, verify, cancel, mark-lost, list, by-collector, by-number, by-id |
 | 1.14b | ~~Implementar verificacion y estados de recibos~~ | TERMINADA | Claude | Maquina de estados completa + deteccion recibos saltados + loss schedule |
-| 1.15 | Implementar modulo tarjetas/cobranza | PENDIENTE | Claude | Tarjetas, movimientos, asignacion, afinidad |
+| 1.15 | ~~Implementar modulo tarjetas/cobranza~~ | TERMINADA | Claude | 8 endpoints: tarjetas CRUD + reasignar + historial + avisos de visita. PostGIS pendiente |
 | 1.16 | Implementar modulo cancelaciones | PENDIENTE | Claude | C1-C5 + reactivacion |
 | 1.17 | Implementar modulo renovaciones | PENDIENTE | Claude | Deteccion, notificacion, seguimiento |
 | 1.18 | Implementar modulo siniestros | PENDIENTE | Claude | Vinculado a POLIZA. Ajustadores, guardias, pases |
