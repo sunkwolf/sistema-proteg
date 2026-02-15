@@ -1,5 +1,6 @@
 """
-Core business entities: Client, Seller, Collector, Vehicle, Coverage, Policy, PolicyAmpliaDetail.
+Core business entities: Client, Employee, EmployeeDepartment, EmployeePermissionOverride,
+Vehicle, Coverage, Policy, PolicyAmpliaDetail.
 """
 
 from __future__ import annotations
@@ -40,7 +41,7 @@ from app.models.enums import (
 
 if TYPE_CHECKING:
     from app.models.audit import Cancellation
-    from app.models.auth import AppUser
+    from app.models.auth import AppUser, Department, Permission
     from app.models.catalog import Address
     from app.models.collections import Card, CollectionAssignment, VisitNotice
     from app.models.endorsements import Endorsement, Renewal
@@ -99,29 +100,39 @@ class Client(Base):
     )
 
 
-class Seller(Base):
-    __tablename__ = "seller"
+class Employee(Base):
+    """Unified employee: replaces separate seller/collector tables.
+    An employee can be vendedor AND cobrador AND ajustador simultaneously."""
+    __tablename__ = "employee"
     __table_args__ = (
-        UniqueConstraint("code_name", name="uq_seller_code"),
+        UniqueConstraint("code_name", name="uq_employee_code"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("app_user.id", ondelete="SET NULL"), nullable=True
+    )
     code_name: Mapped[str] = mapped_column(String(50), nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    # Business role flags (can be combined)
+    es_vendedor: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+    es_cobrador: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+    es_ajustador: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+    # Seller-specific
+    seller_class: Mapped[SellerClassType | None] = mapped_column(
+        Enum(SellerClassType, name="seller_class_type", create_type=False), nullable=True
+    )
+    sales_target: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Collector-specific
+    receipt_limit: Mapped[int] = mapped_column(Integer, nullable=False, server_default="50")
+    # Common
     status: Mapped[EntityStatusType] = mapped_column(
         Enum(EntityStatusType, name="entity_status_type", create_type=False),
         nullable=False,
         server_default="active",
     )
-    class_: Mapped[SellerClassType] = mapped_column(
-        "class",
-        Enum(SellerClassType, name="seller_class_type", create_type=False),
-        nullable=False,
-        server_default="collaborator",
-    )
-    sales_target: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -130,52 +141,74 @@ class Seller(Base):
     )
 
     # Relationships
+    user: Mapped[AppUser | None] = relationship(foreign_keys=[user_id])
+    departments: Mapped[list[EmployeeDepartment]] = relationship(
+        back_populates="employee", cascade="all, delete-orphan"
+    )
+    permission_overrides: Mapped[list[EmployeePermissionOverride]] = relationship(
+        back_populates="employee", cascade="all, delete-orphan"
+    )
+    # As seller
     policies: Mapped[list[Policy]] = relationship(back_populates="seller")
-    payments: Mapped[list[Payment]] = relationship(
+    seller_payments: Mapped[list[Payment]] = relationship(
         back_populates="seller", foreign_keys="[Payment.seller_id]"
     )
-    payment_proposals: Mapped[list[PaymentProposal]] = relationship(
+    seller_proposals: Mapped[list[PaymentProposal]] = relationship(
         back_populates="seller", foreign_keys="[PaymentProposal.seller_id]"
     )
     cards: Mapped[list[Card]] = relationship(back_populates="seller")
     policy_notifications: Mapped[list[PolicyNotification]] = relationship(
         back_populates="seller", cascade="all, delete-orphan"
     )
-
-
-class Collector(Base):
-    __tablename__ = "collector"
-    __table_args__ = (
-        UniqueConstraint("code_name", name="uq_collector_code"),
-    )
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    code_name: Mapped[str] = mapped_column(String(50), nullable=False)
-    full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    receipt_limit: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default="50"
-    )
-    status: Mapped[EntityStatusType] = mapped_column(
-        Enum(EntityStatusType, name="entity_status_type", create_type=False),
-        nullable=False,
-        server_default="active",
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
-    )
-
-    # Relationships
-    payments: Mapped[list[Payment]] = relationship(
+    # As collector
+    collector_payments: Mapped[list[Payment]] = relationship(
         back_populates="collector", foreign_keys="[Payment.collector_id]"
     )
-    payment_proposals: Mapped[list[PaymentProposal]] = relationship(
+    collector_proposals: Mapped[list[PaymentProposal]] = relationship(
         back_populates="collector", foreign_keys="[PaymentProposal.collector_id]"
     )
     receipts: Mapped[list[Receipt]] = relationship(back_populates="collector")
+
+
+class EmployeeDepartment(Base):
+    """Junction table: employee ↔ department (M:N) with es_gerente flag."""
+    __tablename__ = "employee_department"
+
+    employee_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("employee.id", ondelete="CASCADE"), primary_key=True
+    )
+    department_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("department.id", ondelete="CASCADE"), primary_key=True
+    )
+    es_gerente: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+
+    # Relationships
+    employee: Mapped[Employee] = relationship(back_populates="departments")
+    department: Mapped[Department] = relationship()
+
+
+class EmployeePermissionOverride(Base):
+    """Individual permission grant/revoke for an employee, independent of role."""
+    __tablename__ = "employee_permission_override"
+    __table_args__ = (
+        UniqueConstraint("employee_id", "permission_id", name="uq_employee_permission"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    employee_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("employee.id", ondelete="CASCADE"), nullable=False
+    )
+    permission_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("permission.id", ondelete="CASCADE"), nullable=False
+    )
+    granted: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    # Relationships
+    employee: Mapped[Employee] = relationship(back_populates="permission_overrides")
+    permission: Mapped[Permission] = relationship()
 
 
 class Vehicle(Base):
@@ -285,7 +318,7 @@ class Policy(Base):
         Integer, ForeignKey("coverage.id", ondelete="RESTRICT"), nullable=False
     )
     seller_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("seller.id", ondelete="SET NULL"), nullable=True
+        Integer, ForeignKey("employee.id", ondelete="SET NULL"), nullable=True
     )
     service_type: Mapped[ServiceType | None] = mapped_column(
         Enum(ServiceType, name="service_type", create_type=False), nullable=True
@@ -330,7 +363,7 @@ class Policy(Base):
     client: Mapped[Client] = relationship(back_populates="policies")
     vehicle: Mapped[Vehicle] = relationship(back_populates="policies")
     coverage: Mapped[Coverage] = relationship(back_populates="policies")
-    seller: Mapped[Seller | None] = relationship(back_populates="policies")
+    seller: Mapped[Employee | None] = relationship(back_populates="policies")
     data_entry_user: Mapped[AppUser | None] = relationship(
         back_populates="data_entry_policies",
         foreign_keys=[data_entry_user_id],

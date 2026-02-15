@@ -30,7 +30,7 @@ from app.models.enums import (
 
 if TYPE_CHECKING:
     from app.models.auth import AppUser
-    from app.models.business import Policy, Seller
+    from app.models.business import Employee, Policy
 
 
 class SentMessage(Base):
@@ -107,7 +107,7 @@ class PolicyNotification(Base):
         Integer, ForeignKey("policy.id", ondelete="CASCADE"), nullable=False
     )
     seller_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("seller.id", ondelete="CASCADE"), nullable=False
+        Integer, ForeignKey("employee.id", ondelete="CASCADE"), nullable=False
     )
     notification_type: Mapped[NotificationPeriodType] = mapped_column(
         Enum(
@@ -123,7 +123,7 @@ class PolicyNotification(Base):
 
     # Relationships
     policy: Mapped[Policy] = relationship(back_populates="policy_notifications")
-    seller: Mapped[Seller] = relationship(back_populates="policy_notifications")
+    seller: Mapped[Employee] = relationship(back_populates="policy_notifications")
 
 
 class RenewalNotificationLog(Base):

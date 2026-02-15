@@ -49,7 +49,16 @@ from app.models.catalog import Address, Municipality
 from app.models.auth import AppUser, Department, DeviceSession, Permission, Role, RolePermission, Session
 
 # Business
-from app.models.business import Client, Collector, Coverage, Policy, PolicyAmpliaDetail, Seller, Vehicle
+from app.models.business import (
+    Client,
+    Coverage,
+    Employee,
+    EmployeeDepartment,
+    EmployeePermissionOverride,
+    Policy,
+    PolicyAmpliaDetail,
+    Vehicle,
+)
 
 # Payments
 from app.models.payments import Payment, PaymentProposal, Receipt, ReceiptLossSchedule
@@ -106,8 +115,9 @@ __all__ = [
     "DeviceSession",
     # Business
     "Client",
-    "Seller",
-    "Collector",
+    "Employee",
+    "EmployeeDepartment",
+    "EmployeePermissionOverride",
     "Vehicle",
     "Coverage",
     "Policy",

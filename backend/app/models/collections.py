@@ -23,7 +23,7 @@ from app.models.base import Base
 from app.models.enums import CardStatusType
 
 if TYPE_CHECKING:
-    from app.models.business import Policy, Seller
+    from app.models.business import Employee, Policy
     from app.models.payments import Payment
 
 
@@ -37,7 +37,7 @@ class Card(Base):
     current_holder: Mapped[str] = mapped_column(String(50), nullable=False)
     assignment_date: Mapped[date] = mapped_column(Date, nullable=False)
     seller_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("seller.id"), nullable=True
+        Integer, ForeignKey("employee.id", ondelete="SET NULL"), nullable=True
     )
     status: Mapped[CardStatusType] = mapped_column(
         Enum(CardStatusType, name="card_status_type", create_type=False),
@@ -53,7 +53,7 @@ class Card(Base):
 
     # Relationships
     policy: Mapped[Policy] = relationship(back_populates="cards")
-    seller: Mapped[Seller | None] = relationship(back_populates="cards")
+    seller: Mapped[Employee | None] = relationship(back_populates="cards")
     assignments: Mapped[list[CollectionAssignment]] = relationship(
         back_populates="card", cascade="all, delete-orphan"
     )

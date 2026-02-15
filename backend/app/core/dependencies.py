@@ -48,33 +48,65 @@ CurrentUser = Annotated[AppUser, Depends(get_current_user)]
 
 
 def require_permission(permission_name: str):
-    """Factory that returns a dependency checking a specific permission."""
+    """Factory that returns a dependency checking a specific permission.
+
+    Resolution order:
+      1. Role-based permissions (role_permission table)
+      2. Employee permission overrides (employee_permission_override table)
+         - granted=true  → explicitly granted regardless of role
+         - granted=false → explicitly revoked regardless of role
+    """
 
     async def _check_permission(
         current_user: CurrentUser,
         db: Annotated[AsyncSession, Depends(get_db)],
     ) -> AppUser:
         from app.models.auth import Permission, RolePermission
+        from app.models.business import Employee, EmployeePermissionOverride
 
-        if current_user.role_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permiso requerido: {permission_name}",
-            )
-
-        result = await db.execute(
-            select(Permission.name)
-            .join(RolePermission, RolePermission.permission_id == Permission.id)
-            .where(
-                RolePermission.role_id == current_user.role_id,
-                Permission.name == permission_name,
+        # Step 1: Check employee-level overrides first (they take priority)
+        employee_result = await db.execute(
+            select(Employee.id).where(
+                Employee.user_id == current_user.id,
+                Employee.status == "active",
             )
         )
-        if result.scalar_one_or_none() is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permiso requerido: {permission_name}",
+        employee_id = employee_result.scalar_one_or_none()
+
+        if employee_id is not None:
+            override_result = await db.execute(
+                select(EmployeePermissionOverride.granted)
+                .join(Permission, Permission.id == EmployeePermissionOverride.permission_id)
+                .where(
+                    EmployeePermissionOverride.employee_id == employee_id,
+                    Permission.name == permission_name,
+                )
             )
-        return current_user
+            override = override_result.scalar_one_or_none()
+            if override is not None:
+                if not override:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Permiso requerido: {permission_name}",
+                    )
+                return current_user
+
+        # Step 2: Check role-based permissions
+        if current_user.role_id is not None:
+            role_result = await db.execute(
+                select(Permission.name)
+                .join(RolePermission, RolePermission.permission_id == Permission.id)
+                .where(
+                    RolePermission.role_id == current_user.role_id,
+                    Permission.name == permission_name,
+                )
+            )
+            if role_result.scalar_one_or_none() is not None:
+                return current_user
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Permiso requerido: {permission_name}",
+        )
 
     return Depends(_check_permission)

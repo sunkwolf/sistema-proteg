@@ -34,7 +34,7 @@ from app.models.enums import (
 
 if TYPE_CHECKING:
     from app.models.auth import AppUser
-    from app.models.business import Collector, Policy, Seller
+    from app.models.business import Employee, Policy
     from app.models.collections import VisitNotice
 
 
@@ -46,10 +46,10 @@ class Payment(Base):
         Integer, ForeignKey("policy.id", ondelete="RESTRICT"), nullable=False
     )
     seller_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("seller.id", ondelete="SET NULL"), nullable=True
+        Integer, ForeignKey("employee.id", ondelete="SET NULL"), nullable=True
     )
     collector_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("collector.id", ondelete="SET NULL"), nullable=True
+        Integer, ForeignKey("employee.id", ondelete="SET NULL"), nullable=True
     )
     user_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("app_user.id", ondelete="SET NULL"), nullable=True
@@ -86,11 +86,11 @@ class Payment(Base):
 
     # Relationships
     policy: Mapped[Policy] = relationship(back_populates="payments")
-    seller: Mapped[Seller | None] = relationship(
-        back_populates="payments", foreign_keys=[seller_id]
+    seller: Mapped[Employee | None] = relationship(
+        back_populates="seller_payments", foreign_keys=[seller_id]
     )
-    collector: Mapped[Collector | None] = relationship(
-        back_populates="payments", foreign_keys=[collector_id]
+    collector: Mapped[Employee | None] = relationship(
+        back_populates="collector_payments", foreign_keys=[collector_id]
     )
     user: Mapped[AppUser | None] = relationship(
         back_populates="payments", foreign_keys=[user_id]
@@ -113,10 +113,10 @@ class PaymentProposal(Base):
         Integer, ForeignKey("policy.id", ondelete="RESTRICT"), nullable=False
     )
     seller_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("seller.id", ondelete="SET NULL"), nullable=True
+        Integer, ForeignKey("employee.id", ondelete="SET NULL"), nullable=True
     )
     collector_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("collector.id", ondelete="SET NULL"), nullable=True
+        Integer, ForeignKey("employee.id", ondelete="SET NULL"), nullable=True
     )
     user_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("app_user.id", ondelete="SET NULL"), nullable=True
@@ -165,11 +165,11 @@ class PaymentProposal(Base):
     policy: Mapped[Policy] = relationship(
         back_populates="payment_proposals", foreign_keys=[policy_id]
     )
-    seller: Mapped[Seller | None] = relationship(
-        back_populates="payment_proposals", foreign_keys=[seller_id]
+    seller: Mapped[Employee | None] = relationship(
+        back_populates="seller_proposals", foreign_keys=[seller_id]
     )
-    collector: Mapped[Collector | None] = relationship(
-        back_populates="payment_proposals", foreign_keys=[collector_id]
+    collector: Mapped[Employee | None] = relationship(
+        back_populates="collector_proposals", foreign_keys=[collector_id]
     )
     user: Mapped[AppUser | None] = relationship(
         back_populates="payment_proposals", foreign_keys=[user_id]
@@ -188,7 +188,7 @@ class Receipt(Base):
         Integer, ForeignKey("policy.id", ondelete="RESTRICT"), nullable=True
     )
     collector_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("collector.id", ondelete="SET NULL"), nullable=True
+        Integer, ForeignKey("employee.id", ondelete="SET NULL"), nullable=True
     )
     payment_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("payment.id", ondelete="SET NULL"), nullable=True
@@ -210,7 +210,7 @@ class Receipt(Base):
 
     # Relationships
     policy: Mapped[Policy | None] = relationship(back_populates="receipts")
-    collector: Mapped[Collector | None] = relationship(back_populates="receipts")
+    collector: Mapped[Employee | None] = relationship(back_populates="receipts")
     payment: Mapped[Payment | None] = relationship(back_populates="receipts")
 
 
