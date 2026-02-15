@@ -78,6 +78,7 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 10. `5a13939` — feat: modulos vehiculos y coberturas CRUD completos
 11. `4fed4dc` — feat: modulo polizas CRUD con generacion automatica de pagos
 12. `7b166a0` — feat: modulo pagos CRUD + abonos parciales + revertir
+13. `adb4ac7` — feat: modulo autorizacion - propuestas de pago + aprobaciones genericas
 
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
@@ -107,10 +108,10 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 1.12a | ~~Implementar modulo pagos - CRUD y edicion~~ | TERMINADA | Claude | 8 endpoints: CRUD + abono parcial + revertir + marcar problema. Validaciones fecha/delivery |
 | 1.12b | Implementar maquina de estados de pagos | PENDIENTE | Claude | pending→late→overdue→paid/cancelled. Job diario |
 | 1.12c | Implementar contado a cuotas en pagos | PENDIENTE | Claude | Integrado en modulo pagos, no vista separada |
-| 1.12d | Implementar propuestas de pago (cobradores campo) | PENDIENTE | Claude | Cobrador registra cobro como propuesta→aprobacion |
-| 1.13 | Implementar panel de autorizacion unificado | PENDIENTE | Claude | /authorization/*. Pagos + polizas pendientes |
-| 1.14a | Implementar modulo recibos - batch y asignacion | PENDIENTE | Claude | Lotes, asignar a cobradores, receipt_limit=50 |
-| 1.14b | Implementar verificacion y estados de recibos | PENDIENTE | Claude | available→assigned→used/lost/cancelled |
+| 1.12d | ~~Implementar propuestas de pago (cobradores campo)~~ | TERMINADA | Claude | Cubierto por modulo autorizacion. Propuestas CRUD + aprobar/rechazar/cancelar |
+| 1.13 | ~~Implementar panel de autorizacion unificado~~ | TERMINADA | Claude | 9 endpoints /authorization/*. Propuestas de pago + solicitudes genericas de aprobacion |
+| 1.14a | ~~Implementar modulo recibos - batch y asignacion~~ | TERMINADA | Claude | 9 endpoints: batch, assign, verify, cancel, mark-lost, list, by-collector, by-number, by-id |
+| 1.14b | ~~Implementar verificacion y estados de recibos~~ | TERMINADA | Claude | Maquina de estados completa + deteccion recibos saltados + loss schedule |
 | 1.15 | Implementar modulo tarjetas/cobranza | PENDIENTE | Claude | Tarjetas, movimientos, asignacion, afinidad |
 | 1.16 | Implementar modulo cancelaciones | PENDIENTE | Claude | C1-C5 + reactivacion |
 | 1.17 | Implementar modulo renovaciones | PENDIENTE | Claude | Deteccion, notificacion, seguimiento |
