@@ -51,12 +51,14 @@ def _include_routers(app: FastAPI):
     from app.modules.clients.router import router as clients_router
     from app.modules.vehicles.router import router as vehicles_router
     from app.modules.coverages.router import router as coverages_router
+    from app.modules.policies.router import router as policies_router
 
     app.include_router(auth_router, prefix=f"{prefix}/auth", tags=["Auth"])
     app.include_router(employees_router, prefix=f"{prefix}/employees", tags=["Employees"])
     app.include_router(clients_router, prefix=f"{prefix}/clients", tags=["Clients"])
     app.include_router(vehicles_router, prefix=f"{prefix}/vehicles", tags=["Vehicles"])
     app.include_router(coverages_router, prefix=f"{prefix}/coverages", tags=["Coverages"])
+    app.include_router(policies_router, prefix=f"{prefix}/policies", tags=["Policies"])
 
 
 app = create_app()

@@ -74,6 +74,8 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 6. `57ebce1` — feat: unificar seller/collector en tabla employee unificada
 7. `df73991` — feat: modulo empleados CRUD + migracion tablas audit
 8. `ed6f672` — fix: correcciones code review + modulo clientes CRUD
+9. `3079aa2` — docs: actualizar checklist con tareas 1.7 y 1.8a terminadas
+10. `5a13939` — feat: modulos vehiculos y coberturas CRUD completos
 
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
@@ -95,8 +97,8 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 1.8b | Implementar busqueda de clientes con pg_trgm | PENDIENTE | Claude | Extension pg_trgm para busqueda por similitud |
 | 1.8c | Implementar PostGIS para direcciones de clientes | PENDIENTE | Claude | GeoAlchemy2. Busqueda por cercania |
 | 1.8d | Implementar verificacion WhatsApp de clientes | PENDIENTE | Claude | Via Evolution API. No obligatorio |
-| 1.9 | Implementar modulo vehiculos | PENDIENTE | Claude | CRUD + claves (101=AUTO, 103=PICK UP, 105=CAMIONETA, 107=MOTO, 108=MOTOTAXI, 109=CAMION) |
-| 1.10 | Implementar modulo coberturas | PENDIENTE | Claude | RC tabla precios + AMPLIA individual (solo 101,103,105) |
+| 1.9 | ~~Implementar modulo vehiculos~~ | TERMINADA | Claude | 6 endpoints: CRUD + busqueda por serie/placas. Validacion claves 101-109, mapeo tipo, cilindraje motos |
+| 1.10 | ~~Implementar modulo coberturas~~ | TERMINADA | Claude | 6 endpoints: CRUD + busqueda + esquemas de pago. AMPLIA solo 101/103/105, logica cilindraje motos |
 | 1.11a | Implementar modulo polizas - CRUD y calculo de pagos | PENDIENTE | Claude | Vincular cliente+vehiculo+vendedor+cobertura |
 | 1.11b | Implementar maquina de estados de polizas | PENDIENTE | Claude | pre_effective→pending→active→morosa→expired/cancelled |
 | 1.11c | Implementar pendiente de autorizacion de polizas | PENDIENTE | Claude | Gerente aprueba polizas nuevas |
