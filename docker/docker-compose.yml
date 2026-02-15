@@ -1,0 +1,63 @@
+# Docker Compose for CRM Protegrt - Development
+# Usage: docker compose -f docker/docker-compose.yml up -d
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: protegrt-postgres
+    environment:
+      POSTGRES_DB: protegrt_db
+      POSTGRES_USER: protegrt
+      POSTGRES_PASSWORD: protegrt
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ../database/postgresql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U protegrt -d protegrt_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: protegrt-pgbouncer
+    environment:
+      DATABASE_URL: postgres://protegrt:protegrt@postgres:5432/protegrt_db
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 400
+      DEFAULT_POOL_SIZE: 25
+      MIN_POOL_SIZE: 5
+      RESERVE_POOL_SIZE: 5
+      MAX_DB_CONNECTIONS: 50
+      AUTH_TYPE: scram-sha-256
+    ports:
+      - "6432:5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: protegrt-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
