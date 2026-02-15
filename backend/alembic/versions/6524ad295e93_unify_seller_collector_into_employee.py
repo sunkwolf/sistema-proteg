@@ -202,6 +202,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # WARNING: This downgrade is NOT fully reversible.
+    # It recreates seller/collector as EMPTY tables and points FKs at them,
+    # but does NOT backfill data from employee back to seller/collector.
+    # A real rollback requires restoring from backup.
     # Recreate seller and collector tables
     op.create_table('seller',
         sa.Column('id', sa.INTEGER(), autoincrement=True, nullable=False),

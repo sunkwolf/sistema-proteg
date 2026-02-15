@@ -15,6 +15,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
       - ../database/postgresql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./postgres/02-alembic-stamp.sql:/docker-entrypoint-initdb.d/02-alembic-stamp.sql
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U protegrt -d protegrt_db"]

@@ -72,6 +72,7 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 4. `e3542b7` — fix: corregir 3 bugs detectados en code review
 5. `4839909` — feat: seed RBAC - 5 departamentos, 7 roles, 75 permisos granulares
 6. `57ebce1` — feat: unificar seller/collector en tabla employee unificada
+7. `df73991` — feat: modulo empleados CRUD + migracion tablas audit
 
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
@@ -88,7 +89,7 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 1.6a | ~~Definir roles y permisos granulares en BD~~ | TERMINADA | Claude | 5 deptos, 7 roles, 75 permisos, 170 mappings. Script idempotente |
 | 1.6b | ~~Implementar middleware require_permission~~ | TERMINADA | Claude | Factory en dependencies.py que consulta role_permission en BD |
 | 1.6c | ~~Implementar multi-rol y override de permisos~~ | TERMINADA | Claude | Tabla employee unificada, migracion Alembic, permission overrides en dependencies.py |
-| 1.7 | Implementar modulo empleados (CRUD unificado) | PENDIENTE | Claude | Depende de 1.6a/1.6c. Multi-departamento, permission overrides |
+| 1.7 | ~~Implementar modulo empleados (CRUD unificado)~~ | TERMINADA | Claude | 13 endpoints, schemas+repo+service+router. Departments M:N, permission overrides |
 | 1.8a | Implementar modulo clientes - CRUD basico | PENDIENTE | Claude | Sin export CSV/Excel (datos sensibles) |
 | 1.8b | Implementar busqueda de clientes con pg_trgm | PENDIENTE | Claude | Extension pg_trgm para busqueda por similitud |
 | 1.8c | Implementar PostGIS para direcciones de clientes | PENDIENTE | Claude | GeoAlchemy2. Busqueda por cercania |

@@ -28,19 +28,32 @@ class AuthService:
     async def check_rate_limit_and_lockout(
         self, username: str, client_ip: str
     ) -> tuple[bool, bool]:
-        """Check rate-limit and lockout status. Returns (is_rate_limited, is_locked)."""
+        """Check rate-limit and lockout status. Returns (is_rate_limited, is_locked).
+
+        IMPORTANT: Even when rate-limited, we still increment the failure counter
+        so the lockout threshold (10 attempts) can be reached. Without this,
+        the counter freezes at the rate-limit (5) and lockout is unreachable.
+        """
         # Check account lockout first (hard block, independent of rate limit)
         lockout_key = f"auth:lockout:{username}"
         if await self.redis.exists(lockout_key):
             return False, True
 
         # Check rate limit (soft block per window)
-        user_count = await self.redis.get(f"auth:fail:user:{username}")
-        if user_count and int(user_count) >= settings.LOGIN_RATE_LIMIT_USER:
-            return True, False
+        user_key = f"auth:fail:user:{username}"
+        ip_key = f"auth:fail:ip:{client_ip}"
+        user_count = await self.redis.get(user_key)
+        ip_count = await self.redis.get(ip_key)
 
-        ip_count = await self.redis.get(f"auth:fail:ip:{client_ip}")
-        if ip_count and int(ip_count) >= settings.LOGIN_RATE_LIMIT_IP:
+        is_rate_limited = False
+        if user_count and int(user_count) >= settings.LOGIN_RATE_LIMIT_USER:
+            is_rate_limited = True
+        elif ip_count and int(ip_count) >= settings.LOGIN_RATE_LIMIT_IP:
+            is_rate_limited = True
+
+        if is_rate_limited:
+            # Still count the attempt toward lockout even though we block it
+            await self._record_failed_attempt(username, client_ip)
             return True, False
 
         return False, False

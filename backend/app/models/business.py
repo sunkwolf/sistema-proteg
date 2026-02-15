@@ -106,6 +106,7 @@ class Employee(Base):
     __tablename__ = "employee"
     __table_args__ = (
         UniqueConstraint("code_name", name="uq_employee_code"),
+        UniqueConstraint("user_id", name="uq_employee_user_id"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
