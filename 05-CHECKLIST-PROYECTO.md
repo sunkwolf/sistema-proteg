@@ -81,6 +81,12 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 13. `adb4ac7` — feat: modulo autorizacion - propuestas de pago + aprobaciones genericas
 14. `91ce232` — feat: modulo recibos CRUD + memoria inspector
 15. `3f117b5` — feat: modulo tarjetas/cobranza CRUD + avisos de visita
+16. `d8a8fb1` — feat: modulo cancelaciones C1-C5 + reactivacion
+17. `e731d64` — feat: modulo renovaciones - deteccion, CRUD, completar/rechazar
+18. `082c602` — feat: modulo siniestros CRUD + pases medicos/taller + encuesta + guardias
+19. `578fa61` — feat: modulo gruas CRUD + proveedores + encuesta satisfaccion
+20. `5155a68` — feat: modulo endosos CRUD + aprobar/rechazar/aplicar + calculo costo
+21. `44df845` — feat: modulo promociones CRUD + reglas + aplicar/simular descuentos
 
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
@@ -116,11 +122,11 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 1.14b | ~~Implementar verificacion y estados de recibos~~ | TERMINADA | Claude | Maquina de estados completa + deteccion recibos saltados + loss schedule |
 | 1.15 | ~~Implementar modulo tarjetas/cobranza~~ | TERMINADA | Claude | 8 endpoints: tarjetas CRUD + reasignar + historial + avisos de visita. PostGIS pendiente |
 | 1.16 | ~~Implementar modulo cancelaciones~~ | TERMINADA | Claude | 5 endpoints: CRUD + undo (admin) + notify. Cascada a pagos/tarjeta. Codigos C1-C5 |
-| 1.17 | Implementar modulo renovaciones | PENDIENTE | Claude | Deteccion, notificacion, seguimiento |
-| 1.18 | Implementar modulo siniestros | PENDIENTE | Claude | Vinculado a POLIZA. Ajustadores, guardias, pases |
-| 1.19 | Implementar modulo gruas | PENDIENTE | Claude | Vinculado a poliza. Proveedores, elegibilidad |
-| 1.20 | Implementar modulo endosos | PENDIENTE | Claude | 5 tipos + costo auto + WhatsApp |
-| 1.21 | Implementar modulo promociones | PENDIENTE | Claude | 4 tipos: %, fijo, meses gratis, $0 enganche. JSONB |
+| 1.17 | ~~Implementar modulo renovaciones~~ | TERMINADA | Claude | 7 endpoints: list, pending, create, get, complete, reject, notifications. Deteccion polizas por vencer |
+| 1.18 | ~~Implementar modulo siniestros~~ | TERMINADA | Claude | 13 endpoints: CRUD + pases medicos/taller + encuesta satisfaccion + guardias ajustadores |
+| 1.19 | ~~Implementar modulo gruas~~ | TERMINADA | Claude | 9 endpoints: CRUD servicios + proveedores CRUD + encuesta satisfaccion |
+| 1.20 | ~~Implementar modulo endosos~~ | TERMINADA | Claude | 8 endpoints: CRUD + aprobar/rechazar/aplicar + calculo costo. 5 tipos, JSONB change_details |
+| 1.21 | ~~Implementar modulo promociones~~ | TERMINADA | Claude | 12 endpoints: CRUD promos + CRUD reglas + aplicar/simular + listar aplicaciones. 4 tipos descuento |
 | 1.22 | Implementar modulo cotizaciones (integracion) | PENDIENTE | Claude | Solo quote_external_id. Sin JOINs |
 | 1.23a | Implementar modulo notificaciones - WhatsApp | PENDIENTE | Claude | Evolution API. Plantillas, cola Celery |
 | 1.23b | Implementar modulo notificaciones - Telegram | PENDIENTE | Claude | Bot API. Alertas siniestros, admin |
