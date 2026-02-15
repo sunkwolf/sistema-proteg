@@ -17,9 +17,11 @@ from app.modules.admin.schemas import (
     RoleResponse,
     RoleUpdate,
     RoleWithPermissions,
+    StatusUpdaterResponse,
     SystemInfoResponse,
 )
 from app.modules.admin.service import AdminService
+from app.modules.policies.status_updater import run_status_updater
 
 router = APIRouter()
 
@@ -151,3 +153,16 @@ async def get_system_info(
     """Get system information and stats."""
     service = AdminService(db)
     return await service.get_system_info()
+
+
+# ── Status Updater (manual trigger) ──────────────────────────────────
+
+
+@router.post("/status-update", response_model=StatusUpdaterResponse)
+async def trigger_status_update(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _user: Annotated[None, require_permission("admin.config")],
+):
+    """Manually trigger the StatusUpdater (normally runs at midnight via Celery)."""
+    result = await run_status_updater(db)
+    return result

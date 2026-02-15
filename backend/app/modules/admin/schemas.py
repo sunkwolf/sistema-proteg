@@ -97,3 +97,11 @@ class SystemInfoResponse(BaseModel):
     total_roles: int
     total_permissions: int
     total_departments: int
+
+
+# ── Status Updater ───────────────────────────────────────────────────
+
+
+class StatusUpdaterResponse(BaseModel):
+    payments_updated: int
+    policies_updated: int

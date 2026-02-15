@@ -138,7 +138,7 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 1.24 | ~~Implementar modulo reportes~~ | TERMINADA | Claude | 7 endpoints Excel con openpyxl. SIN export de clientes. Commit `30ac5bc` |
 | 1.25 | ~~Implementar modulo dashboard~~ | TERMINADA | Claude | 4 endpoints: general, ventas, cobranza, siniestros. KPIs, alertas, actividad |
 | 1.26 | ~~Implementar modulo administracion~~ | TERMINADA | Claude | 9 endpoints: audit log, roles CRUD, permisos, departamentos, system info |
-| 1.27 | Implementar StatusUpdater (job diario Celery) | PENDIENTE | Claude | Corre a medianoche. Actualiza pagos y polizas |
+| 1.27 | Implementar StatusUpdater (job diario Celery) | TERMINADA | Claude | Core logic + Celery task + Beat scheduler + trigger manual POST /admin/status-update. Commit 28 |
 | 1.28 | Implementar sistema de backup pgBackRest | PENDIENTE | Claude | Full semanal + diff diario + WAL continuo |
 | 1.29 | Tests unitarios e integracion backend | PENDIENTE | Claude | pytest + httpx async + factory_boy |
 
