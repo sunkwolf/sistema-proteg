@@ -52,7 +52,7 @@ class AuthorizationService:
         return proposal
 
     async def create_proposal(
-        self, data: ProposalCreate, collector_id: int
+        self, data: ProposalCreate, user_id: int
     ) -> PaymentProposal:
         # Validate original payment exists
         payment = await self.repo.get_payment(data.original_payment_id)
@@ -60,6 +60,13 @@ class AuthorizationService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Pago original no encontrado",
+            )
+
+        # Validate policy_id matches the original payment
+        if data.policy_id != payment.policy_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El policy_id no corresponde al pago original",
             )
 
         # Cannot propose for an already paid payment
@@ -79,10 +86,14 @@ class AuthorizationService:
                 detail="Ya existe una propuesta activa para este pago",
             )
 
+        # Resolve collector_id from authenticated user
+        collector_id = await self.repo.get_employee_id_by_user(user_id)
+
         proposal = PaymentProposal(
             original_payment_id=data.original_payment_id,
             policy_id=data.policy_id,
             collector_id=collector_id,
+            user_id=user_id,
             payment_number=payment.payment_number,
             receipt_number=data.receipt_number,
             actual_date=data.actual_date,
@@ -169,12 +180,12 @@ class AuthorizationService:
                 detail="Solo se pueden cancelar propuestas activas",
             )
 
-        # Only the collector who created the proposal can cancel it
+        # Only the user who created the proposal can cancel it
         # (admins have proposals.approve which bypasses this endpoint)
-        if user_id is not None and proposal.collector_id != user_id:
+        if user_id is not None and proposal.user_id != user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Solo el cobrador que creo la propuesta puede cancelarla",
+                detail="Solo el usuario que creo la propuesta puede cancelarla",
             )
 
         proposal.draft_status = "discarded"

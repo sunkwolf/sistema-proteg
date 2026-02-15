@@ -39,6 +39,15 @@ class ReportService:
 
         # Sheet 1: Renewals
         query = select(Renewal).order_by(Renewal.renewal_date.desc())
+        if month:
+            # month format: "YYYY-MM"
+            query = query.where(
+                func.to_char(Renewal.renewal_date, "YYYY-MM") == month
+            )
+        if seller_id:
+            query = query.join(
+                Policy, Renewal.old_policy_id == Policy.id
+            ).where(Policy.seller_id == seller_id)
         result = await self.session.execute(query)
         renewals = list(result.scalars().all())
         headers = ["ID", "Poliza Anterior", "Poliza Nueva", "Fecha", "Estado", "Comentarios"]
@@ -141,6 +150,8 @@ class ReportService:
             query = query.where(Payment.due_date >= date_from)
         if date_to:
             query = query.where(Payment.due_date <= date_to)
+        if collector_id:
+            query = query.where(Payment.collector_id == collector_id)
 
         result = await self.session.execute(query)
         payments = list(result.scalars().all())
@@ -241,7 +252,7 @@ class ReportService:
                 p.amount,
                 p.actual_date,
                 None,
-                p.receipt_id,
+                p.receipt_number,
             ])
         add_sheet(wb, "Pagos del Dia", headers, rows)
         return workbook_to_bytes(wb)

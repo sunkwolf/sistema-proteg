@@ -75,7 +75,7 @@ async def update_tow_service(
     tow_service_id: int,
     data: TowServiceUpdate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _perm: Annotated[None, require_permission("tow_services.create")],
+    _perm: Annotated[None, require_permission("tow_services.update")],
 ):
     """Update tow service fields (status, times, costs, etc.)."""
     svc = TowServiceManager(db)

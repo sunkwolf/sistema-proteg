@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from geoalchemy2 import Geography
 from geoalchemy2.functions import ST_DWithin, ST_Distance, ST_MakePoint, ST_SetSRID
 from sqlalchemy import Select, cast, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -154,9 +155,9 @@ class ClientRepository:
     ) -> list[tuple[Client, float]]:
         """Find clients within radius_meters of a point. Returns (client, distance_m)."""
         point = ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)
-        distance = ST_Distance(
-            func.cast(Address.geom, func.geography), func.cast(point, func.geography)
-        )
+        geog_geom = cast(Address.geom, Geography)
+        geog_point = cast(point, Geography)
+        distance = ST_Distance(geog_geom, geog_point)
 
         stmt = (
             self._base_query()
@@ -164,11 +165,7 @@ class ClientRepository:
             .where(
                 Client.deleted_at.is_(None),
                 Address.geom.isnot(None),
-                ST_DWithin(
-                    func.cast(Address.geom, func.geography),
-                    func.cast(point, func.geography),
-                    radius_meters,
-                ),
+                ST_DWithin(geog_geom, geog_point, radius_meters),
             )
             .add_columns(distance.label("distance_m"))
             .order_by(distance)

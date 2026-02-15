@@ -6,7 +6,7 @@ from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit import ApprovalRequest
-from app.models.business import Policy
+from app.models.business import Employee, Policy
 from app.models.payments import Payment, PaymentProposal
 
 
@@ -130,5 +130,14 @@ class AuthorizationRepository:
     async def get_policy(self, policy_id: int) -> Policy | None:
         result = await self.session.execute(
             select(Policy).where(Policy.id == policy_id)
+        )
+        return result.scalar_one_or_none()
+
+    # ── Employee lookup ────────────────────────────────────────────
+
+    async def get_employee_id_by_user(self, user_id: int) -> int | None:
+        """Get employee.id linked to an app_user.id."""
+        result = await self.session.execute(
+            select(Employee.id).where(Employee.user_id == user_id)
         )
         return result.scalar_one_or_none()

@@ -113,7 +113,7 @@ class DashboardService:
         # Pending proposals
         r = await self.session.execute(
             select(func.count(PaymentProposal.id)).where(
-                PaymentProposal.status == PaymentProposalStatusType.ACTIVE
+                PaymentProposal.draft_status == PaymentProposalStatusType.ACTIVE
             )
         )
         pending_proposals = r.scalar_one()
@@ -539,7 +539,7 @@ class DashboardService:
         # Pending proposals
         r = await self.session.execute(
             select(func.count(PaymentProposal.id)).where(
-                PaymentProposal.status == PaymentProposalStatusType.ACTIVE
+                PaymentProposal.draft_status == PaymentProposalStatusType.ACTIVE
             )
         )
         pending_proposals = r.scalar_one()

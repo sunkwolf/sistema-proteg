@@ -29,8 +29,8 @@ Actuar como **inspector senior** del proyecto CRM:
 
 ## Referencia de seguimiento
 - Commit reportado por el usuario/equipo: `ed6f672`.
-- Último commit revisado por inspección: `5155a68` (HEAD en `develop` al momento de la review).
-- Rango auditado en la revisión actual: `ed6f672..5155a68`.
+- Último commit revisado por inspección: `ae6d986` (HEAD en `develop` al momento de la review).
+- Rango auditado en la revisión actual: `5155a68..ae6d986`.
 - Flujo de migración planeado (resumen):
   1) unificar empleados en MySQL,
   2) validar operación en legado,

@@ -98,7 +98,7 @@ async def update_incident(
     incident_id: int,
     data: IncidentUpdate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _perm: Annotated[None, require_permission("incidents.create")],
+    _perm: Annotated[None, require_permission("incidents.update")],
 ):
     """Update incident fields (status, times, adjuster, etc.)."""
     service = IncidentService(db)

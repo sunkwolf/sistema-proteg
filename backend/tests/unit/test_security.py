@@ -93,29 +93,26 @@ class TestRefreshToken:
 class TestJWT:
     @pytest.fixture(autouse=True)
     def setup_keys(self, tmp_path):
-        """Generate temporary RSA keys for testing."""
-        import subprocess
+        """Generate temporary RSA keys for testing using cryptography (no openssl binary)."""
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
 
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         private_key_path = tmp_path / "private.pem"
         public_key_path = tmp_path / "public.pem"
 
-        subprocess.run(
-            [
-                "openssl", "genpkey", "-algorithm", "RSA",
-                "-out", str(private_key_path),
-                "-pkeyopt", "rsa_keygen_bits:2048",
-            ],
-            check=True,
-            capture_output=True,
+        private_key_path.write_bytes(
+            key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
         )
-        subprocess.run(
-            [
-                "openssl", "rsa", "-pubout",
-                "-in", str(private_key_path),
-                "-out", str(public_key_path),
-            ],
-            check=True,
-            capture_output=True,
+        public_key_path.write_bytes(
+            key.public_key().public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo,
+            )
         )
 
         # Patch the settings to use our test keys
