@@ -140,7 +140,7 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 1.26 | ~~Implementar modulo administracion~~ | TERMINADA | Claude | 9 endpoints: audit log, roles CRUD, permisos, departamentos, system info |
 | 1.27 | Implementar StatusUpdater (job diario Celery) | TERMINADA | Claude | Core logic + Celery task + Beat scheduler + trigger manual POST /admin/status-update. Commit 28 |
 | 1.28 | Implementar sistema de backup pgBackRest | PENDIENTE | Claude | Full semanal + diff diario + WAL continuo |
-| 1.29 | Tests unitarios e integracion backend | PENDIENTE | Claude | pytest + httpx async + factory_boy |
+| 1.29 | Tests unitarios e integracion backend | TERMINADA | Claude | 43 tests: security (11), StatusUpdater (10), pagos (7), auth integration (10), conftest con mock fixtures. Commit 31 |
 
 ### Bugs corregidos por code review (2026-02-15):
 - **Anti-bruteforce**: Lockout a 10 intentos era inalcanzable porque rate-limit cortaba a 5 sin incrementar contador. Corregido: ahora son checks independientes.
