@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from app.core.config import get_settings
 from app.core.exceptions import AppException, app_exception_handler, unhandled_exception_handler
 from app.core.middleware import setup_middleware
+from app.core.redis import close_redis
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -15,6 +16,7 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     logger.info("Iniciando %s v%s", settings.APP_NAME, settings.APP_VERSION)
     yield
+    await close_redis()
     logger.info("Deteniendo %s", settings.APP_NAME)
 
 
