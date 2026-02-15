@@ -77,6 +77,7 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 9. `3079aa2` — docs: actualizar checklist con tareas 1.7 y 1.8a terminadas
 10. `5a13939` — feat: modulos vehiculos y coberturas CRUD completos
 11. `4fed4dc` — feat: modulo polizas CRUD con generacion automatica de pagos
+12. `7b166a0` — feat: modulo pagos CRUD + abonos parciales + revertir
 
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
@@ -103,7 +104,7 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 1.11a | ~~Implementar modulo polizas - CRUD y calculo de pagos~~ | TERMINADA | Claude | 6 endpoints: CRUD + folio lookup + cambiar vendedor. Auto-genera pagos y tarjeta |
 | 1.11b | Implementar maquina de estados de polizas | PENDIENTE | Claude | pre_effective→pending→active→morosa→expired/cancelled |
 | 1.11c | Implementar pendiente de autorizacion de polizas | PENDIENTE | Claude | Gerente aprueba polizas nuevas |
-| 1.12a | Implementar modulo pagos - CRUD y edicion | PENDIENTE | Claude | Solo depto Cobranza puede EDITAR pagos |
+| 1.12a | ~~Implementar modulo pagos - CRUD y edicion~~ | TERMINADA | Claude | 8 endpoints: CRUD + abono parcial + revertir + marcar problema. Validaciones fecha/delivery |
 | 1.12b | Implementar maquina de estados de pagos | PENDIENTE | Claude | pending→late→overdue→paid/cancelled. Job diario |
 | 1.12c | Implementar contado a cuotas en pagos | PENDIENTE | Claude | Integrado en modulo pagos, no vista separada |
 | 1.12d | Implementar propuestas de pago (cobradores campo) | PENDIENTE | Claude | Cobrador registra cobro como propuesta→aprobacion |
