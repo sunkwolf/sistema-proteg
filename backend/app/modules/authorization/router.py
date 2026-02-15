@@ -59,12 +59,11 @@ async def get_proposal(
 async def create_proposal(
     data: ProposalCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    user: CurrentUser,
     _perm: Annotated[None, require_permission("proposals.create")],
 ):
     """Create a payment proposal (cobrador submits from field)."""
     service = AuthorizationService(db)
-    return await service.create_proposal(data, collector_id=user.id)
+    return await service.create_proposal(data, collector_id=data.collector_id)
 
 
 @router.post(
@@ -103,11 +102,12 @@ async def reject_proposal(
 async def cancel_proposal(
     proposal_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _user: Annotated[None, require_permission("proposals.create")],
+    user: CurrentUser,
+    _perm: Annotated[None, require_permission("proposals.create")],
 ):
-    """Cancel a payment proposal (cobrador cancels their own)."""
+    """Cancel a payment proposal (only the creator or an admin)."""
     service = AuthorizationService(db)
-    return await service.cancel_proposal(proposal_id)
+    return await service.cancel_proposal(proposal_id, user_id=user.id)
 
 
 # ── Generic Approval Requests ────────────────────────────────────────

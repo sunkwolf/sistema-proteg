@@ -153,7 +153,9 @@ class AuthorizationService:
 
         return await self.repo.update_proposal(proposal)
 
-    async def cancel_proposal(self, proposal_id: int) -> PaymentProposal:
+    async def cancel_proposal(
+        self, proposal_id: int, user_id: int | None = None
+    ) -> PaymentProposal:
         proposal = await self.get_proposal(proposal_id)
 
         draft = proposal.draft_status
@@ -163,6 +165,14 @@ class AuthorizationService:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Solo se pueden cancelar propuestas activas",
+            )
+
+        # Only the collector who created the proposal can cancel it
+        # (admins have proposals.approve which bypasses this endpoint)
+        if user_id is not None and proposal.collector_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Solo el cobrador que creo la propuesta puede cancelarla",
             )
 
         proposal.draft_status = "discarded"

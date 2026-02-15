@@ -54,18 +54,18 @@ async def list_incidents(
 @router.get("/assigned", response_model=IncidentListResponse)
 async def list_assigned_incidents(
     db: Annotated[AsyncSession, Depends(get_db)],
-    user: CurrentUser,
-    _perm: Annotated[None, require_permission("incidents.read")],
+    _perm: Annotated[None, require_permission("incidents.read_assigned")],
+    adjuster_id: int = Query(..., description="Adjuster ID (from adjuster table)"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     service_status: str | None = Query(None),
 ):
-    """List incidents assigned to the current user's adjuster profile."""
+    """List incidents assigned to a specific adjuster."""
     service = IncidentService(db)
     return await service.list_incidents(
         skip=skip,
         limit=limit,
-        adjuster_id=user.id,
+        adjuster_id=adjuster_id,
         service_status=service_status,
     )
 

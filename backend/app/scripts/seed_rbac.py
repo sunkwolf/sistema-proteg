@@ -82,6 +82,7 @@ PERMISSIONS = [
     ("proposals.approve", "Aprobar propuestas de pago"),
     ("proposals.reject", "Rechazar propuestas de pago"),
     # --- Cobranza / Tarjetas ---
+    ("collections.create", "Crear avisos de visita y registros de cobranza"),
     ("collections.read", "Ver todas las tarjetas de cobranza"),
     ("collections.read_own_route", "Ver solo ruta de cobranza propia"),
     ("collections.assign", "Asignar tarjetas a cobradores"),
@@ -97,13 +98,15 @@ PERMISSIONS = [
     ("incidents.create", "Registrar siniestro nuevo"),
     ("incidents.read", "Ver todos los siniestros"),
     ("incidents.read_assigned", "Ver solo siniestros asignados"),
-    ("incidents.update_own", "Actualizar siniestros asignados"),
+    ("incidents.update", "Actualizar siniestros"),
     ("incidents.close", "Cerrar un siniestro"),
+    ("incidents.admin", "Gestionar guardias y turnos de ajustadores"),
     # --- Gruas ---
     ("tow_services.create", "Solicitar servicio de grua"),
     ("tow_services.read", "Ver todos los servicios de grua"),
     ("tow_services.read_assigned", "Ver solo servicios de grua asignados"),
-    ("tow_services.update_own", "Actualizar servicio de grua asignado"),
+    ("tow_services.update", "Actualizar servicio de grua"),
+    ("tow_services.admin", "Gestionar proveedores de grua"),
     # --- Endosos ---
     ("endorsements.create", "Crear endoso"),
     ("endorsements.read", "Ver endosos"),
@@ -129,8 +132,8 @@ PERMISSIONS = [
     ("employees.update", "Editar datos de empleados"),
     ("employees.toggle_status", "Activar/desactivar empleados"),
     # --- Reportes ---
-    ("reports.view", "Ver reportes"),
-    ("reports.export", "Exportar reportes a Excel"),
+    ("reports.read", "Ver y descargar reportes"),
+    ("reports.admin", "Reportes de comisiones y pagos del dia"),
     # --- Dashboard ---
     ("dashboard.view", "Ver dashboard general"),
     ("dashboard.collection", "Ver dashboard de cobranza"),
@@ -168,10 +171,12 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         "collections.assign", "collections.reassign",
         "receipts.assign",
         # Reports & dashboard
-        "reports.view", "reports.export",
+        "reports.read", "reports.admin",
         "dashboard.view", "dashboard.collection",
         # Shifts
         "shifts.read", "shifts.manage",
+        # Incidents & tow admin
+        "incidents.admin", "tow_services.admin",
         # Cancellations (create + approve undo)
         "cancellations.create",
     ],
@@ -207,8 +212,8 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         "receipts.read_assigned", "receipts.use",
         # Clients (assigned only)
         "clients.read_assigned",
-        # Collections (own route)
-        "collections.read_own_route",
+        # Collections (own route + create visit notices)
+        "collections.read_own_route", "collections.create",
         # Payments (read)
         "payments.read",
         # Dashboard
@@ -233,9 +238,11 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
 
     "ajustador": [
         # Incidents (core function)
-        "incidents.read_assigned", "incidents.update_own",
+        "incidents.read", "incidents.read_assigned", "incidents.create",
+        "incidents.update",
         # Tow services
-        "tow_services.read_assigned", "tow_services.update_own",
+        "tow_services.read", "tow_services.read_assigned", "tow_services.create",
+        "tow_services.update",
         # Shifts
         "shifts.read",
         # Read basics
@@ -253,7 +260,7 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         "endorsements.read", "cancellations.read", "renewals.read",
         "promotions.read", "notifications.read",
         "dashboard.view",
-        "reports.view",
+        "reports.read",
     ],
 }
 

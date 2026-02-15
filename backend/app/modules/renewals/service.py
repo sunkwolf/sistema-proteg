@@ -60,7 +60,7 @@ class RenewalService:
             days = (p.expiration_date - today).days if p.expiration_date else 0
             items.append({
                 "id": p.id,
-                "policy_number": p.policy_number,
+                "folio": p.folio,
                 "client_id": p.client_id,
                 "seller_id": p.seller_id,
                 "expiration_date": p.expiration_date,

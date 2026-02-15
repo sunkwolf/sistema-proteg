@@ -66,17 +66,24 @@ class TowServiceRepository:
         return tow_service
 
     async def generate_report_number(self) -> str:
-        """Generate next tow report number (TOW-YYYYMMDD-NNNN)."""
+        """Generate next tow report number (TOW-YYYYMMDD-NNNN).
+
+        Uses MAX instead of COUNT to avoid race conditions.
+        """
         today = date.today()
         prefix = f"TOW-{today.strftime('%Y%m%d')}-"
 
         result = await self.session.execute(
-            select(func.count(TowService.id)).where(
+            select(func.max(TowService.report_number)).where(
                 TowService.report_number.like(f"{prefix}%")
             )
         )
-        count = result.scalar_one()
-        return f"{prefix}{(count + 1):04d}"
+        last = result.scalar_one_or_none()
+        if last:
+            seq = int(last.split("-")[-1]) + 1
+        else:
+            seq = 1
+        return f"{prefix}{seq:04d}"
 
     # ── Policy ─────────────────────────────────────────────────────
 

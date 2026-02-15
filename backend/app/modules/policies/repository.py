@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, String, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -94,11 +94,11 @@ class PolicyRepository:
             # Search in client name or folio (cast to string)
             query = query.join(Policy.client).where(
                 Client.full_name.ilike(pattern)
-                | func.cast(Policy.folio, func.text()).ilike(pattern)
+                | cast(Policy.folio, String).ilike(pattern)
             )
             count_query = count_query.join(Client).where(
                 Client.full_name.ilike(pattern)
-                | func.cast(Policy.folio, func.text()).ilike(pattern)
+                | cast(Policy.folio, String).ilike(pattern)
             )
 
         total_result = await self.session.execute(count_query)

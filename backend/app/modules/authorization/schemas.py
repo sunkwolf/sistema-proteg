@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 class ProposalCreate(BaseModel):
     original_payment_id: int
     policy_id: int
+    collector_id: int = Field(..., description="Employee ID of the collector")
     receipt_number: str | None = Field(None, max_length=10)
     actual_date: date
     amount: Decimal = Field(..., gt=0)

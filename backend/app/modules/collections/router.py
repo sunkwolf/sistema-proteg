@@ -128,7 +128,7 @@ async def list_visit_notices(
 async def create_visit_notice(
     data: VisitNoticeCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _user: Annotated[None, require_permission("collections.read")],
+    _perm: Annotated[None, require_permission("collections.create")],
 ):
     """Create a visit notice for a policy."""
     service = CollectionService(db)

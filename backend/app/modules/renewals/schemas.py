@@ -47,7 +47,7 @@ class PendingRenewalPolicy(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    policy_number: str | None
+    folio: int | None
     client_id: int | None
     seller_id: int | None
     expiration_date: date | None

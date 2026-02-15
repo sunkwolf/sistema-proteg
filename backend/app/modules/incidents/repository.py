@@ -216,14 +216,22 @@ class IncidentRepository:
         return result.scalar_one_or_none()
 
     async def generate_report_number(self) -> str:
-        """Generate next incident report number (INC-YYYYMMDD-NNNN)."""
+        """Generate next incident report number (INC-YYYYMMDD-NNNN).
+
+        Uses MAX instead of COUNT to avoid race conditions — if two requests
+        run concurrently, the unique constraint on report_number will catch it.
+        """
         today = date.today()
         prefix = f"INC-{today.strftime('%Y%m%d')}-"
 
         result = await self.session.execute(
-            select(func.count(Incident.id)).where(
+            select(func.max(Incident.report_number)).where(
                 Incident.report_number.like(f"{prefix}%")
             )
         )
-        count = result.scalar_one()
-        return f"{prefix}{(count + 1):04d}"
+        last = result.scalar_one_or_none()
+        if last:
+            seq = int(last.split("-")[-1]) + 1
+        else:
+            seq = 1
+        return f"{prefix}{seq:04d}"
