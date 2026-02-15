@@ -17,11 +17,11 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 ### Sistema Nuevo (PostgreSQL) — Repo: `D:\Claude\crm\nuevo-sistema` (rama `develop`)
 - Codebase completamente nueva: FastAPI + Next.js + React Native
 - Schema PostgreSQL v2.1 (1639 lineas, 49 tablas, 31 ENUMs)
-- **Nota sobre seller/collector**: El schema v2.1 todavia tiene tablas separadas `seller` y `collector`
-  porque fue diseñado para facilitar la migracion de datos desde MySQL. La unificacion a tabla
-  `employee` con flags (`es_vendedor`, `es_cobrador`, `es_ajustador`) se implementara en el
-  backend (tareas 1.6a y 1.7) mediante una migracion Alembic que refactorizara el schema.
-  Esto es trabajo planificado, no un descuido.
+- **Nota sobre seller/collector**: La unificacion a tabla `employee` con flags (`es_vendedor`,
+  `es_cobrador`, `es_ajustador`) ya fue implementada (tarea 1.6c). La migracion Alembic
+  `6524ad295e93` elimino las tablas `seller` y `collector`, migrando datos y FKs a `employee`.
+  La BD ahora tiene 48 tablas (49 originales - seller - collector + employee + employee_department
+  + employee_permission_override = 48 + 2 nuevas = 50 modelos, 48 tablas en BD).
 
 ### Flujo de migracion planeado
 1. Unificar empleados en MySQL actual (tarea 1.1, la hace el usuario)
@@ -70,6 +70,8 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 2. `2ebaec3` — feat: agregar modelos SQLAlchemy para las 49 tablas del schema v2.1
 3. `f3b9977` — feat: implementar autenticacion JWT RS256 completa
 4. `e3542b7` — fix: corregir 3 bugs detectados en code review
+5. `4839909` — feat: seed RBAC - 5 departamentos, 7 roles, 75 permisos granulares
+6. `57ebce1` — feat: unificar seller/collector en tabla employee unificada
 
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
@@ -83,9 +85,9 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 1.5b | ~~Implementar endpoints login/refresh/logout~~ | TERMINADA | Claude | POST /login, POST /refresh, POST /logout, GET /me |
 | 1.5c | ~~Implementar rate limiting en login~~ | TERMINADA | Claude | 5/usuario, 10/IP en 15min. Lockout a 10 intentos por 30min |
 | 1.5d | Implementar 2FA (TOTP) | PENDIENTE | Claude | pyotp. Puede hacerse despues del MVP |
-| 1.6a | **Definir roles y permisos granulares en BD** | **PENDIENTE** | Claude | **SIGUIENTE TAREA**. Seed con 7 roles y ~55 permisos granulares |
+| 1.6a | ~~Definir roles y permisos granulares en BD~~ | TERMINADA | Claude | 5 deptos, 7 roles, 75 permisos, 170 mappings. Script idempotente |
 | 1.6b | ~~Implementar middleware require_permission~~ | TERMINADA | Claude | Factory en dependencies.py que consulta role_permission en BD |
-| 1.6c | Implementar multi-rol y override de permisos | PENDIENTE | Claude | Depende de 1.6a. Formula: rol_base UNION flags UNION overrides |
+| 1.6c | ~~Implementar multi-rol y override de permisos~~ | TERMINADA | Claude | Tabla employee unificada, migracion Alembic, permission overrides en dependencies.py |
 | 1.7 | Implementar modulo empleados (CRUD unificado) | PENDIENTE | Claude | Depende de 1.6a/1.6c. Multi-departamento, permission overrides |
 | 1.8a | Implementar modulo clientes - CRUD basico | PENDIENTE | Claude | Sin export CSV/Excel (datos sensibles) |
 | 1.8b | Implementar busqueda de clientes con pg_trgm | PENDIENTE | Claude | Extension pg_trgm para busqueda por similitud |
@@ -235,8 +237,8 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 - `docker-compose.prod.yml`: Redis con requirepass, puertos cerrados, passwords por env vars. Para EasyPanel
 - CSP header se agregara cuando el frontend se integre (irrelevante para API pura)
 
-### Sobre el schema seller/collector vs employee
-El DDL actual (`schema.sql`) tiene tablas separadas `seller` y `collector`. Esto es **intencional** para la fase
-de migracion de datos desde MySQL. La unificacion a tabla `employee` (con flags `es_vendedor`, `es_cobrador`,
-`es_ajustador` y tabla `employee_department` para multi-departamento) se implementara como una migracion Alembic
-en las tareas 1.6a y 1.7. Los modelos SQLAlchemy ya estan preparados para refactorizarse en ese momento.
+### Sobre el schema employee (unificado)
+Las tablas `seller` y `collector` fueron eliminadas y reemplazadas por `employee` (con flags `es_vendedor`,
+`es_cobrador`, `es_ajustador`) + `employee_department` (M:N con `es_gerente` per-depto) + `employee_permission_override`.
+La migracion Alembic `6524ad295e93` se encargo de migrar datos y actualizar los 8 FKs en 6 tablas.
+El sistema de permisos en `dependencies.py` resuelve: overrides > role_permissions.
