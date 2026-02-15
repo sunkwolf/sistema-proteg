@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.payments import Payment
 from app.modules.payments.repository import PaymentRepository
 from app.modules.payments.schemas import (
+    CashToInstallments,
     MarkProblem,
     PartialPayment,
     PaymentCreate,
@@ -18,10 +19,12 @@ from app.modules.payments.schemas import (
     PaymentUpdate,
     RevertPayment,
 )
+from app.modules.policies.status_updater import update_single_policy_status
 
 
 class PaymentService:
     def __init__(self, db: AsyncSession):
+        self.db = db
         self.repo = PaymentRepository(db)
 
     # ── Serialization ─────────────────────────────────────────────────
@@ -141,10 +144,16 @@ class PaymentService:
                     detail="Diferencia entre office_delivery_date y actual_date no puede ser mayor a 30 dias",
                 )
 
+        old_status = p.status
         for field, value in update_data.items():
             setattr(p, field, value)
 
         p = await self.repo.update(p)
+
+        # Recalculate policy status if payment status changed
+        if p.status != old_status:
+            await update_single_policy_status(self.db, p.policy_id)
+
         return self._to_response(p)
 
     # ── Partial payment (abono) ───────────────────────────────────────
@@ -191,6 +200,9 @@ class PaymentService:
         )
         await self.repo.create(new_payment)
 
+        # Recalculate policy status after partial payment
+        await update_single_policy_status(self.db, p.policy_id)
+
         return self._to_response(p)
 
     # ── Revert payment ────────────────────────────────────────────────
@@ -220,6 +232,10 @@ class PaymentService:
         p.office_delivery_date = None
         p.comments = f"REVERTIDO: {data.reason}"
         p = await self.repo.update(p)
+
+        # Recalculate policy status after revert
+        await update_single_policy_status(self.db, p.policy_id)
+
         return self._to_response(p)
 
     # ── Mark problem ──────────────────────────────────────────────────
@@ -237,3 +253,87 @@ class PaymentService:
         p.comments = f"PROBLEMA: {data.comments}"
         p = await self.repo.update(p)
         return self._to_response(p)
+
+    # ── Cash to installments (contado a cuotas) ───────────────────────
+
+    async def convert_cash_to_installments(
+        self, data: CashToInstallments
+    ) -> list[PaymentResponse]:
+        """Convert remaining unpaid payments of a policy into monthly installments."""
+        from decimal import ROUND_HALF_UP, Decimal
+        from dateutil.relativedelta import relativedelta
+
+        payments = await self.repo.get_by_policy(data.policy_id)
+        if not payments:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No se encontraron pagos para esta poliza",
+            )
+
+        # Separate paid from unpaid
+        unpaid = [p for p in payments if str(getattr(p.status, "value", p.status)) in ("pending", "late")]
+        if not unpaid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No hay pagos pendientes para convertir",
+            )
+
+        # Check no overdue/cancelled payments
+        has_overdue = any(
+            str(getattr(p.status, "value", p.status)) in ("overdue", "cancelled")
+            for p in payments
+        )
+        if has_overdue:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se puede convertir: hay pagos vencidos o cancelados",
+            )
+
+        # Calculate total remaining
+        total_remaining = sum(p.amount for p in unpaid if p.amount)
+        if not total_remaining or total_remaining <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El monto pendiente total es 0",
+            )
+
+        # Use earliest unpaid due_date as base
+        base_date = min(p.due_date for p in unpaid if p.due_date) or date.today()
+        seller_id = unpaid[0].seller_id
+
+        # Delete all unpaid payments
+        for p in unpaid:
+            await self.db.delete(p)
+        await self.db.flush()
+
+        # Determine starting payment number (after last paid payment)
+        paid_payments = [p for p in payments if p not in unpaid]
+        start_number = max((p.payment_number for p in paid_payments), default=0) + 1
+
+        # Generate new installment payments
+        installment_amount = (total_remaining / data.installments).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
+        new_payments = []
+        for i in range(data.installments):
+            # Last payment absorbs rounding difference
+            if i == data.installments - 1:
+                amount = total_remaining - (installment_amount * (data.installments - 1))
+            else:
+                amount = installment_amount
+
+            payment = Payment(
+                policy_id=data.policy_id,
+                seller_id=seller_id,
+                payment_number=start_number + i,
+                amount=amount,
+                due_date=base_date + relativedelta(months=i),
+                status="pending",
+            )
+            payment = await self.repo.create(payment)
+            new_payments.append(payment)
+
+        # Recalculate policy status
+        await update_single_policy_status(self.db, data.policy_id)
+
+        return [self._to_response(p) for p in new_payments]

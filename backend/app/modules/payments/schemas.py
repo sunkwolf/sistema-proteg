@@ -76,6 +76,12 @@ class MarkProblem(BaseModel):
     comments: str = Field(..., min_length=1, max_length=500)
 
 
+class CashToInstallments(BaseModel):
+    """Convert remaining unpaid cash payments into monthly installments."""
+    policy_id: int
+    installments: int = Field(..., ge=2, le=12)
+
+
 # ── Response ─────────────────────────────────────────────────────────
 
 class PaymentResponse(BaseModel):

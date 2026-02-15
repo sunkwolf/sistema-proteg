@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import require_permission
 from app.modules.payments.schemas import (
+    CashToInstallments,
     MarkProblem,
     PartialPayment,
     PaymentCreate,
@@ -123,3 +124,14 @@ async def mark_payment_problem(
     """Mark a payment as having a problem."""
     service = PaymentService(db)
     return await service.mark_problem(payment_id, data)
+
+
+@router.post("/convert-to-installments", response_model=list[PaymentResponse])
+async def convert_cash_to_installments(
+    data: CashToInstallments,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _user: Annotated[None, require_permission("payments.update")],
+):
+    """Convert remaining unpaid cash payments into monthly installments (contado a cuotas)."""
+    service = PaymentService(db)
+    return await service.convert_cash_to_installments(data)
