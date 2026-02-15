@@ -20,6 +20,8 @@ from app.modules.clients.schemas import (
     ClientResponse,
     ClientUpdate,
     MunicipalityInfo,
+    NearbyClientResult,
+    WhatsAppVerifyResponse,
 )
 
 
@@ -210,3 +212,90 @@ class ClientService:
             )
         client.deleted_at = datetime.now(timezone.utc)
         await self.repo.update(client)
+
+    # ── pg_trgm similarity search ─────────────────────────────────────
+
+    async def search_similar(
+        self, query: str, limit: int = 20
+    ) -> list[ClientResponse]:
+        clients = await self.repo.search_by_similarity(query, limit=limit)
+        return [self._to_response(c) for c in clients]
+
+    # ── PostGIS nearby search ─────────────────────────────────────────
+
+    async def find_nearby(
+        self,
+        latitude: float,
+        longitude: float,
+        radius_meters: float = 5000,
+        limit: int = 50,
+    ) -> list[NearbyClientResult]:
+        results = await self.repo.find_nearby(
+            latitude, longitude, radius_meters, limit
+        )
+        return [
+            NearbyClientResult(
+                client=self._to_response(client),
+                distance_meters=round(distance, 1),
+            )
+            for client, distance in results
+        ]
+
+    # ── WhatsApp verification ─────────────────────────────────────────
+
+    async def verify_whatsapp(self, client_id: int) -> WhatsAppVerifyResponse:
+        """Verify if client's phone is a valid WhatsApp number via Evolution API."""
+        import httpx
+
+        from app.core.config import get_settings
+
+        client = await self.repo.get_by_id(client_id)
+        if client is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Cliente no encontrado",
+            )
+
+        phone = client.phone_1
+        if not phone:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El cliente no tiene numero de WhatsApp registrado",
+            )
+
+        settings = get_settings()
+        if not settings.EVOLUTION_API_URL or not settings.EVOLUTION_API_KEY:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Evolution API no configurada",
+            )
+
+        # Add Mexico country code if not present
+        check_phone = phone if phone.startswith("52") else f"52{phone}"
+
+        try:
+            async with httpx.AsyncClient(timeout=10) as http:
+                resp = await http.post(
+                    f"{settings.EVOLUTION_API_URL}/chat/whatsappNumbers/protegrt",
+                    json={"numbers": [check_phone]},
+                    headers={"apikey": settings.EVOLUTION_API_KEY},
+                )
+                resp.raise_for_status()
+                data = resp.json()
+
+            # Evolution API returns list of objects with "exists" and "jid"
+            is_whatsapp = False
+            if isinstance(data, list) and data:
+                is_whatsapp = data[0].get("exists", False)
+
+            return WhatsAppVerifyResponse(
+                phone=phone,
+                is_whatsapp=is_whatsapp,
+                verified=True,
+            )
+        except httpx.HTTPError:
+            return WhatsAppVerifyResponse(
+                phone=phone,
+                is_whatsapp=False,
+                verified=False,
+            )

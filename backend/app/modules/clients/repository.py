@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Select, func, select
+from geoalchemy2.functions import ST_DWithin, ST_Distance, ST_MakePoint, ST_SetSRID
+from sqlalchemy import Select, cast, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -118,3 +119,61 @@ class ClientRepository:
             )
         )
         return result.scalar_one() > 0
+
+    # ── pg_trgm similarity search ─────────────────────────────────────
+
+    async def search_by_similarity(
+        self, query: str, *, limit: int = 20, threshold: float = 0.3
+    ) -> list[Client]:
+        """Search clients using pg_trgm similarity on name + RFC."""
+        full_name = func.concat(
+            Client.first_name, " ",
+            Client.paternal_surname, " ",
+            func.coalesce(Client.maternal_surname, ""),
+        )
+        similarity = func.similarity(full_name, query)
+
+        stmt = (
+            self._base_query()
+            .where(Client.deleted_at.is_(None))
+            .where(similarity > threshold)
+            .order_by(similarity.desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().unique().all())
+
+    # ── PostGIS nearby search ─────────────────────────────────────────
+
+    async def find_nearby(
+        self,
+        latitude: float,
+        longitude: float,
+        radius_meters: float = 5000,
+        limit: int = 50,
+    ) -> list[tuple[Client, float]]:
+        """Find clients within radius_meters of a point. Returns (client, distance_m)."""
+        point = ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)
+        distance = ST_Distance(
+            func.cast(Address.geom, func.geography), func.cast(point, func.geography)
+        )
+
+        stmt = (
+            self._base_query()
+            .join(Address, Client.address_id == Address.id)
+            .where(
+                Client.deleted_at.is_(None),
+                Address.geom.isnot(None),
+                ST_DWithin(
+                    func.cast(Address.geom, func.geography),
+                    func.cast(point, func.geography),
+                    radius_meters,
+                ),
+            )
+            .add_columns(distance.label("distance_m"))
+            .order_by(distance)
+            .limit(limit)
+        )
+        result = await self.session.execute(stmt)
+        rows = result.unique().all()
+        return [(row[0], row[1]) for row in rows]

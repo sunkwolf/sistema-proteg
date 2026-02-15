@@ -10,7 +10,13 @@ from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser
 from app.core.redis import get_redis
-from app.modules.auth.schemas import LoginRequest, LoginResponse, UserInfo
+from app.modules.auth.schemas import (
+    LoginRequest,
+    LoginResponse,
+    TotpSetupResponse,
+    TotpVerifyRequest,
+    UserInfo,
+)
 from app.modules.auth.service import AuthService
 
 logger = logging.getLogger(__name__)
@@ -71,13 +77,24 @@ async def login(
             detail="Demasiados intentos de login. Intenta mas tarde.",
         )
 
-    result = await service.authenticate(data.username, data.password, client_ip)
+    result = await service.authenticate(
+        data.username, data.password, client_ip, totp_code=data.totp_code
+    )
 
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales invalidas",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # 2FA required but no code provided
+    if result.get("requires_2fa"):
+        return LoginResponse(
+            access_token="",
+            expires_in=0,
+            user=UserInfo.model_validate(result["user"]),
+            requires_2fa=True,
         )
 
     _set_refresh_cookie(response, result["refresh_token"])
@@ -141,3 +158,48 @@ async def logout(
 async def get_me(current_user: CurrentUser):
     """Return current authenticated user info."""
     return UserInfo.model_validate(current_user)
+
+
+# ── 2FA (TOTP) ──────────────────────────────────────────────────────
+
+
+@router.post("/2fa/setup", response_model=TotpSetupResponse)
+async def setup_2fa(
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
+):
+    """Generate a TOTP secret. User must verify with /2fa/verify to activate."""
+    service = AuthService(db, redis_client)
+    result = await service.setup_totp(current_user.id, current_user.username)
+    return TotpSetupResponse(**result)
+
+
+@router.post("/2fa/verify", status_code=200)
+async def verify_2fa(
+    data: TotpVerifyRequest,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
+):
+    """Verify a TOTP code and enable 2FA for the user."""
+    service = AuthService(db, redis_client)
+    ok = await service.verify_and_enable_totp(current_user.id, data.code)
+    if not ok:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Codigo TOTP invalido",
+        )
+    return {"detail": "2FA activado correctamente"}
+
+
+@router.post("/2fa/disable", status_code=200)
+async def disable_2fa(
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
+):
+    """Disable 2FA for the current user."""
+    service = AuthService(db, redis_client)
+    await service.disable_totp(current_user.id)
+    return {"detail": "2FA desactivado"}

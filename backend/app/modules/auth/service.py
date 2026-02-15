@@ -1,6 +1,7 @@
 import json
 import logging
 
+import pyotp
 import redis.asyncio as redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -59,11 +60,12 @@ class AuthService:
         return False, False
 
     async def authenticate(
-        self, username: str, password: str, client_ip: str
+        self, username: str, password: str, client_ip: str,
+        totp_code: str | None = None,
     ) -> dict | None:
         """
         Authenticate user, return tokens + user info, or None if invalid.
-        Handles: password verify, rehash, refresh token in Redis.
+        Handles: password verify, 2FA TOTP, rehash, refresh token in Redis.
         Note: rate-limit/lockout checks are done in the router BEFORE this method.
         """
         user = await self.repo.get_user_by_username(username)
@@ -74,6 +76,18 @@ class AuthService:
         if not verify_password(password, user.password_hash):
             await self._record_failed_attempt(username, client_ip)
             return None
+
+        # 2FA check: if user has TOTP enabled, require code
+        if user.totp_enabled and user.totp_secret:
+            if not totp_code:
+                return {
+                    "requires_2fa": True,
+                    "user": user,
+                }
+            totp = pyotp.TOTP(user.totp_secret)
+            if not totp.verify(totp_code, valid_window=1):
+                await self._record_failed_attempt(username, client_ip)
+                return None
 
         # Rehash if needed (bcrypt -> argon2id migration)
         if needs_rehash(user.password_hash):
@@ -114,6 +128,43 @@ class AuthService:
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             "user": user,
         }
+
+    # ── 2FA (TOTP) ───────────────────────────────────────────────────
+
+    async def setup_totp(self, user_id: int, username: str) -> dict:
+        """Generate a TOTP secret and return it with provisioning URI."""
+        secret = pyotp.random_base32()
+        totp = pyotp.TOTP(secret)
+        uri = totp.provisioning_uri(name=username, issuer_name="CRM Protegrt")
+        # Store secret but don't enable until verified
+        await self.repo.set_totp_secret(user_id, secret)
+        # Temporarily disable until user confirms with a valid code
+        from sqlalchemy import update as sa_update
+        from app.models.auth import AppUser
+        await self.db.execute(
+            sa_update(AppUser).where(AppUser.id == user_id).values(totp_enabled=False)
+        )
+        return {"secret": secret, "provisioning_uri": uri}
+
+    async def verify_and_enable_totp(self, user_id: int, code: str) -> bool:
+        """Verify a TOTP code against the stored secret and enable 2FA."""
+        user = await self.repo.get_user_by_id(user_id)
+        if user is None or not user.totp_secret:
+            return False
+        totp = pyotp.TOTP(user.totp_secret)
+        if not totp.verify(code, valid_window=1):
+            return False
+        # Enable 2FA
+        from sqlalchemy import update as sa_update
+        from app.models.auth import AppUser
+        await self.db.execute(
+            sa_update(AppUser).where(AppUser.id == user_id).values(totp_enabled=True)
+        )
+        return True
+
+    async def disable_totp(self, user_id: int) -> None:
+        """Disable 2FA for a user."""
+        await self.repo.set_totp_secret(user_id, None)
 
     async def refresh(self, refresh_token: str) -> dict | None:
         """Rotate refresh token. Returns new access + refresh tokens or None."""

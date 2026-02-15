@@ -167,3 +167,28 @@ class ClientListResponse(BaseModel):
     total: int
     skip: int
     limit: int
+
+
+# ── Similarity search ────────────────────────────────────────────────
+
+
+class ClientSearchResult(ClientResponse):
+    """Client result from pg_trgm similarity search."""
+    pass
+
+
+# ── Nearby search ────────────────────────────────────────────────────
+
+
+class NearbyClientResult(BaseModel):
+    client: ClientResponse
+    distance_meters: float
+
+
+# ── WhatsApp verification ────────────────────────────────────────────
+
+
+class WhatsAppVerifyResponse(BaseModel):
+    phone: str
+    is_whatsapp: bool
+    verified: bool

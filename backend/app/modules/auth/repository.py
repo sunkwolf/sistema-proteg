@@ -28,3 +28,11 @@ class AuthRepository:
             .where(AppUser.id == user_id)
             .values(last_login_at=datetime.now(timezone.utc))
         )
+
+    async def set_totp_secret(self, user_id: int, secret: str | None) -> None:
+        enabled = secret is not None
+        await self.session.execute(
+            update(AppUser)
+            .where(AppUser.id == user_id)
+            .values(totp_secret=secret, totp_enabled=enabled)
+        )
