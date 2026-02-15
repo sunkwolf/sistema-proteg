@@ -1,0 +1,17 @@
+# pgBackRest backup schedule for CRM Protegrt
+# Install on main VPS: crontab -e (as root or postgres user)
+#
+# Schedule:
+#   - Full backup: Sunday 02:00 AM (Mexico City time)
+#   - Differential: Mon-Sat 02:00 AM
+#   - Verification: Daily 08:00 AM
+#   - WAL archiving: Continuous (via archive_command in postgresql.conf)
+
+# Full backup every Sunday at 02:00
+0 2 * * 0 pgbackrest --stanza=protegrt backup --type=full 2>> /var/log/pgbackrest/cron.log
+
+# Differential backup Mon-Sat at 02:00
+0 2 * * 1-6 pgbackrest --stanza=protegrt backup --type=diff 2>> /var/log/pgbackrest/cron.log
+
+# Verify backup integrity daily at 08:00
+0 8 * * * /opt/protegrt/scripts/check_backup_status.sh 2>> /var/log/pgbackrest/cron.log

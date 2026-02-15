@@ -105,3 +105,14 @@ class SystemInfoResponse(BaseModel):
 class StatusUpdaterResponse(BaseModel):
     payments_updated: int
     policies_updated: int
+
+
+# ── Backup Status ───────────────────────────────────────────────────
+
+
+class BackupInfoResponse(BaseModel):
+    available: bool
+    last_backup_type: str | None = None
+    last_backup_time: str | None = None
+    age_hours: int | None = None
+    error: str | None = None

@@ -10,6 +10,7 @@ from app.core.database import get_db
 from app.core.dependencies import require_permission
 from app.modules.admin.schemas import (
     AuditLogListResponse,
+    BackupInfoResponse,
     DepartmentResponse,
     PermissionResponse,
     RoleCreate,
@@ -166,3 +167,58 @@ async def trigger_status_update(
     """Manually trigger the StatusUpdater (normally runs at midnight via Celery)."""
     result = await run_status_updater(db)
     return result
+
+
+# ── Backup Status ────────────────────────────────────────────────────
+
+
+@router.get("/backup-status", response_model=BackupInfoResponse)
+async def get_backup_status(
+    _user: Annotated[None, require_permission("admin.access")],
+):
+    """Check pgBackRest backup status (runs pgbackrest info command)."""
+    import asyncio
+    import json as json_lib
+
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "pgbackrest", "--stanza=protegrt", "info", "--output=json",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=10)
+
+        if proc.returncode != 0:
+            return BackupInfoResponse(
+                available=False,
+                error=f"pgbackrest retorno codigo {proc.returncode}",
+            )
+
+        data = json_lib.loads(stdout.decode())
+        if not data or not data[0].get("backup"):
+            return BackupInfoResponse(available=True, error="Sin backups registrados")
+
+        last = data[0]["backup"][-1]
+        stop_ts = last.get("timestamp", {}).get("stop", "")
+
+        from datetime import datetime, timezone
+        age_hours = None
+        if stop_ts:
+            backup_dt = datetime.fromtimestamp(stop_ts, tz=timezone.utc)
+            age_hours = int(
+                (datetime.now(timezone.utc) - backup_dt).total_seconds() / 3600
+            )
+
+        return BackupInfoResponse(
+            available=True,
+            last_backup_type=last.get("type"),
+            last_backup_time=str(stop_ts),
+            age_hours=age_hours,
+        )
+    except FileNotFoundError:
+        return BackupInfoResponse(
+            available=False,
+            error="pgbackrest no instalado en este entorno",
+        )
+    except Exception as exc:
+        return BackupInfoResponse(available=False, error=str(exc))
