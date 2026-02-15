@@ -104,15 +104,15 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 1.5a | ~~Implementar JWT RS256 (access + refresh tokens)~~ | TERMINADA | Claude | RSA 2048-bit, access 15min, refresh UUID opaco con rotacion |
 | 1.5b | ~~Implementar endpoints login/refresh/logout~~ | TERMINADA | Claude | POST /login, POST /refresh, POST /logout, GET /me |
 | 1.5c | ~~Implementar rate limiting en login~~ | TERMINADA | Claude | 5/usuario, 10/IP en 15min. Lockout a 10 intentos por 30min |
-| 1.5d | Implementar 2FA (TOTP) | PENDIENTE | Claude | pyotp. Puede hacerse despues del MVP |
+| 1.5d | Implementar 2FA (TOTP) | TERMINADA | Claude | pyotp. Puede hacerse despues del MVP |
 | 1.6a | ~~Definir roles y permisos granulares en BD~~ | TERMINADA | Claude | 5 deptos, 7 roles, 75 permisos, 170 mappings. Script idempotente |
 | 1.6b | ~~Implementar middleware require_permission~~ | TERMINADA | Claude | Factory en dependencies.py que consulta role_permission en BD |
 | 1.6c | ~~Implementar multi-rol y override de permisos~~ | TERMINADA | Claude | Tabla employee unificada, migracion Alembic, permission overrides en dependencies.py |
 | 1.7 | ~~Implementar modulo empleados (CRUD unificado)~~ | TERMINADA | Claude | 13 endpoints, schemas+repo+service+router. Departments M:N, permission overrides |
 | 1.8a | ~~Implementar modulo clientes - CRUD basico~~ | TERMINADA | Claude | 5 endpoints, soft-delete, PostGIS, validacion RFC. Sin export |
-| 1.8b | Implementar busqueda de clientes con pg_trgm | PENDIENTE | Claude | Extension pg_trgm para busqueda por similitud |
-| 1.8c | Implementar PostGIS para direcciones de clientes | PENDIENTE | Claude | GeoAlchemy2. Busqueda por cercania |
-| 1.8d | Implementar verificacion WhatsApp de clientes | PENDIENTE | Claude | Via Evolution API. No obligatorio |
+| 1.8b | Implementar busqueda de clientes con pg_trgm | TERMINADA | Claude | Extension pg_trgm para busqueda por similitud |
+| 1.8c | Implementar PostGIS para direcciones de clientes | TERMINADA | Claude | GeoAlchemy2. Busqueda por cercania |
+| 1.8d | Implementar verificacion WhatsApp de clientes | TERMINADA | Claude | Via Evolution API. No obligatorio |
 | 1.9 | ~~Implementar modulo vehiculos~~ | TERMINADA | Claude | 6 endpoints: CRUD + busqueda por serie/placas. Validacion claves 101-109, mapeo tipo, cilindraje motos |
 | 1.10 | ~~Implementar modulo coberturas~~ | TERMINADA | Claude | 6 endpoints: CRUD + busqueda + esquemas de pago. AMPLIA solo 101/103/105, logica cilindraje motos |
 | 1.11a | ~~Implementar modulo polizas - CRUD y calculo de pagos~~ | TERMINADA | Claude | 6 endpoints: CRUD + folio lookup + cambiar vendedor. Auto-genera pagos y tarjeta |
