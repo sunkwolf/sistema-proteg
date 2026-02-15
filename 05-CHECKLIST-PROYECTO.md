@@ -1,6 +1,46 @@
 # 05 - Checklist del Proyecto: Nuevo CRM Protegrt
 
-**Ultima actualizacion:** 2026-02-14
+**Ultima actualizacion:** 2026-02-15
+
+---
+
+## CONTEXTO: DOS SISTEMAS EN PARALELO
+
+Este proyecto involucra **dos codebases separadas** que coexisten durante el desarrollo:
+
+### Sistema Actual (MySQL) — Repo: `D:\pqtcreacion` (rama `claude`)
+- Aplicacion web actual en produccion (Python/Flask + MySQL + Jinja2)
+- Se le hicieron mejoras: refactorizacion MVC, unificacion de empleados, correccion de bugs
+- Los scripts de migracion de empleados (`database/migrations/`) viven aqui
+- Este sistema seguira en produccion hasta que el nuevo este listo para el corte
+
+### Sistema Nuevo (PostgreSQL) — Repo: `D:\Claude\crm\nuevo-sistema` (rama `develop`)
+- Codebase completamente nueva: FastAPI + Next.js + React Native
+- Schema PostgreSQL v2.1 (1639 lineas, 49 tablas, 31 ENUMs)
+- **Nota sobre seller/collector**: El schema v2.1 todavia tiene tablas separadas `seller` y `collector`
+  porque fue diseñado para facilitar la migracion de datos desde MySQL. La unificacion a tabla
+  `employee` con flags (`es_vendedor`, `es_cobrador`, `es_ajustador`) se implementara en el
+  backend (tareas 1.6a y 1.7) mediante una migracion Alembic que refactorizara el schema.
+  Esto es trabajo planificado, no un descuido.
+
+### Flujo de migracion planeado
+1. Unificar empleados en MySQL actual (tarea 1.1, la hace el usuario)
+2. Verificar que el sistema actual funciona con empleados unificados (tarea 1.2)
+3. Construir el nuevo sistema completo sobre PostgreSQL (Fase 1-3)
+4. Migrar datos MySQL → PostgreSQL con scripts automatizados (Fase 4)
+5. Desplegar nuevo sistema y hacer corte (Fase 5)
+
+---
+
+## REPOSITORIO Y TRACKING
+
+- **Repo GitHub**: https://github.com/sunkwolf/sistema-proteg.git
+- **Branches**: `main` (estable) / `develop` (desarrollo activo)
+- **Tracking primario**: Notion (base de datos "Checklist del Proyecto")
+- **Tracking secundario**: Este documento (para revisiones externas)
+- **Docker**: `docker/docker-compose.yml` (dev) + `docker-compose.prod.yml` (prod)
+  - Dev: puertos expuestos, sin auth en Redis/PG (solo local)
+  - Prod: puertos cerrados, passwords por env vars, Redis con requirepass
 
 ---
 
@@ -9,47 +49,81 @@
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
 | 0.1 | ~~Contratar VPS principal (EasyPanel)~~ | TERMINADA | Usuario | Ya tiene EasyPanel corriendo |
-| 0.2 | Contratar VPS secundario (backups) | PENDIENTE | Usuario | Min 2 CPU, 2GB RAM, 200GB HDD. Solo para pgBackRest |
+| 0.2 | Contratar VPS secundario (backups) | PENDIENTE | Usuario | Min 2 CPU, 2GB RAM, 200GB HDD. Solo para pgBackRest. No bloquea Fase 1 |
 | 0.3 | ~~Instalar EasyPanel en VPS principal~~ | TERMINADA | Usuario | Ya instalado |
 | 0.4 | ~~Registrar dominio~~ | TERMINADA | Usuario | Ya tiene dominio |
-| 0.5 | Configurar DNS (subdominio api. y app.) | PENDIENTE | Usuario | A record: api.dominio.com, app.dominio.com → IP del VPS |
-| 0.6 | Crear repositorio GitHub para nuevo proyecto | PENDIENTE | Usuario | Claude da instrucciones |
-| 0.7 | Configurar WireGuard VPN en VPS | PENDIENTE | Claude + Usuario | Claude genera configs, usuario las aplica |
+| 0.5 | Configurar DNS (subdominio api. y app.) | PENDIENTE | Usuario | No bloquea desarrollo. Se necesita para Fase 5 (deploy) |
+| 0.6 | ~~Crear repositorio GitHub~~ | TERMINADA | Claude | https://github.com/sunkwolf/sistema-proteg.git |
+| 0.7 | Configurar WireGuard VPN en VPS | PENDIENTE | Claude + Usuario | No bloquea desarrollo. Se necesita para Fase 5 |
 | 0.8 | ~~Instalar Evolution API para WhatsApp~~ | TERMINADA | Usuario | Ya la tiene corriendo |
+| 0.9 | ~~Crear proyecto FastAPI (estructura)~~ | TERMINADA | Claude | 148+ archivos, 21 modulos, monolito modular |
+| 0.10 | ~~Docker Compose dev + prod~~ | TERMINADA | Claude | PG 16 + PgBouncer + Redis. Dev y prod separados |
+| 0.11 | ~~Schema PostgreSQL v2.1~~ | TERMINADA | Claude | 1639 lineas, 49 tablas, 31 ENUMs, correcciones B8-B12 |
+| 0.12 | ~~Git init + push a GitHub~~ | TERMINADA | Claude | Branches main + develop creados y pusheados |
+| 0.13 | ~~Alembic config + baseline~~ | TERMINADA | Claude | Revision 1a3018309e6e. Schema cargado via DDL |
+| 0.14 | ~~Docker levantado y verificado~~ | TERMINADA | Claude | PG:5433, PgBouncer:6432, Redis:6379 |
 
 ## FASE 1: BASE DE DATOS Y BACKEND CORE
 
+### Commits realizados en develop:
+1. `178324b` — Commit inicial: estructura del proyecto CRM Protegrt
+2. `2ebaec3` — feat: agregar modelos SQLAlchemy para las 49 tablas del schema v2.1
+3. `f3b9977` — feat: implementar autenticacion JWT RS256 completa
+4. `e3542b7` — fix: corregir 3 bugs detectados en code review
+
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
-| 1.1 | Ejecutar migracion de empleados en MySQL actual | PENDIENTE | Usuario | 4 scripts en database/migrations/ + guia |
-| 1.2 | Verificar que la app actual funciona con empleados unificados | PENDIENTE | Usuario | Probar login, polizas, cobranza, siniestros |
-| 1.3 | Disenar schema PostgreSQL final (DDL corregido) | PENDIENTE | Claude | Corregir: payment_method_type, payment_plan_type, prima_total, rfc, receipt_limit |
-| 1.4 | Crear proyecto FastAPI (estructura de carpetas) | PENDIENTE | Claude | Monolito modular con 14 modulos |
-| 1.5 | Implementar modulo de auth (JWT RS256) | PENDIENTE | Claude | Login, refresh, logout, 2FA, rate limiting |
-| 1.6 | Implementar RBAC + permisos + middleware | PENDIENTE | Claude | Roles, permisos por modulo, overrides individuales |
-| 1.7 | Implementar modulo empleados (CRUD unificado) | PENDIENTE | Claude | Multi-departamento, permission overrides |
-| 1.8 | Implementar modulo clientes | PENDIENTE | Claude | CRUD + busqueda pg_trgm + PostGIS + verificacion WhatsApp |
-| 1.9 | Implementar modulo vehiculos | PENDIENTE | Claude | CRUD + claves de vehiculo (101-109) |
-| 1.10 | Implementar modulo coberturas | PENDIENTE | Claude | Tabla de precios RC + AMPLIA individual |
-| 1.11 | Implementar modulo polizas | PENDIENTE | Claude | CRUD + StatusUpdater + pendiente de autorizacion |
-| 1.12 | Implementar modulo pagos | PENDIENTE | Claude | CRUD + maquina de estados + contado a cuotas |
-| 1.13 | Implementar panel de autorizacion | PENDIENTE | Claude | Unificado: propuestas de pago + polizas pendientes |
-| 1.14 | Implementar modulo recibos | PENDIENTE | Claude | Batch, asignar, verificar, maquina de estados |
-| 1.15 | Implementar modulo tarjetas/cobranza | PENDIENTE | Claude | Tarjetas, movimientos, asignacion |
+| 1.1 | Ejecutar migracion de empleados en MySQL actual | PENDIENTE | Usuario | 4 scripts en `D:\pqtcreacion\database\migrations\`. No bloquea Fase 1 del nuevo sistema |
+| 1.2 | Verificar que la app actual funciona con empleados unificados | PENDIENTE | Usuario | Probar login, polizas, cobranza, siniestros en sistema actual |
+| 1.3 | ~~Disenar schema PostgreSQL final (DDL corregido)~~ | TERMINADA | Claude | v2.1 con 49 tablas, 31 ENUMs, correcciones B8-B12 aplicadas |
+| 1.4 | ~~Crear proyecto FastAPI (estructura de carpetas)~~ | TERMINADA | Claude | Monolito modular con 21 modulos |
+| 1.4b | ~~Configurar Alembic + primera migracion~~ | TERMINADA | Claude | Baseline stamp sobre DDL existente |
+| 1.4c | ~~Modelos SQLAlchemy para 49 tablas~~ | TERMINADA | Claude | Validados: 49 tablas coinciden con schema.sql |
+| 1.5a | ~~Implementar JWT RS256 (access + refresh tokens)~~ | TERMINADA | Claude | RSA 2048-bit, access 15min, refresh UUID opaco con rotacion |
+| 1.5b | ~~Implementar endpoints login/refresh/logout~~ | TERMINADA | Claude | POST /login, POST /refresh, POST /logout, GET /me |
+| 1.5c | ~~Implementar rate limiting en login~~ | TERMINADA | Claude | 5/usuario, 10/IP en 15min. Lockout a 10 intentos por 30min |
+| 1.5d | Implementar 2FA (TOTP) | PENDIENTE | Claude | pyotp. Puede hacerse despues del MVP |
+| 1.6a | **Definir roles y permisos granulares en BD** | **PENDIENTE** | Claude | **SIGUIENTE TAREA**. Seed con 7 roles y ~55 permisos granulares |
+| 1.6b | ~~Implementar middleware require_permission~~ | TERMINADA | Claude | Factory en dependencies.py que consulta role_permission en BD |
+| 1.6c | Implementar multi-rol y override de permisos | PENDIENTE | Claude | Depende de 1.6a. Formula: rol_base UNION flags UNION overrides |
+| 1.7 | Implementar modulo empleados (CRUD unificado) | PENDIENTE | Claude | Depende de 1.6a/1.6c. Multi-departamento, permission overrides |
+| 1.8a | Implementar modulo clientes - CRUD basico | PENDIENTE | Claude | Sin export CSV/Excel (datos sensibles) |
+| 1.8b | Implementar busqueda de clientes con pg_trgm | PENDIENTE | Claude | Extension pg_trgm para busqueda por similitud |
+| 1.8c | Implementar PostGIS para direcciones de clientes | PENDIENTE | Claude | GeoAlchemy2. Busqueda por cercania |
+| 1.8d | Implementar verificacion WhatsApp de clientes | PENDIENTE | Claude | Via Evolution API. No obligatorio |
+| 1.9 | Implementar modulo vehiculos | PENDIENTE | Claude | CRUD + claves (101=AUTO, 103=PICK UP, 105=CAMIONETA, 107=MOTO, 108=MOTOTAXI, 109=CAMION) |
+| 1.10 | Implementar modulo coberturas | PENDIENTE | Claude | RC tabla precios + AMPLIA individual (solo 101,103,105) |
+| 1.11a | Implementar modulo polizas - CRUD y calculo de pagos | PENDIENTE | Claude | Vincular cliente+vehiculo+vendedor+cobertura |
+| 1.11b | Implementar maquina de estados de polizas | PENDIENTE | Claude | pre_effective→pending→active→morosa→expired/cancelled |
+| 1.11c | Implementar pendiente de autorizacion de polizas | PENDIENTE | Claude | Gerente aprueba polizas nuevas |
+| 1.12a | Implementar modulo pagos - CRUD y edicion | PENDIENTE | Claude | Solo depto Cobranza puede EDITAR pagos |
+| 1.12b | Implementar maquina de estados de pagos | PENDIENTE | Claude | pending→late→overdue→paid/cancelled. Job diario |
+| 1.12c | Implementar contado a cuotas en pagos | PENDIENTE | Claude | Integrado en modulo pagos, no vista separada |
+| 1.12d | Implementar propuestas de pago (cobradores campo) | PENDIENTE | Claude | Cobrador registra cobro como propuesta→aprobacion |
+| 1.13 | Implementar panel de autorizacion unificado | PENDIENTE | Claude | /authorization/*. Pagos + polizas pendientes |
+| 1.14a | Implementar modulo recibos - batch y asignacion | PENDIENTE | Claude | Lotes, asignar a cobradores, receipt_limit=50 |
+| 1.14b | Implementar verificacion y estados de recibos | PENDIENTE | Claude | available→assigned→used/lost/cancelled |
+| 1.15 | Implementar modulo tarjetas/cobranza | PENDIENTE | Claude | Tarjetas, movimientos, asignacion, afinidad |
 | 1.16 | Implementar modulo cancelaciones | PENDIENTE | Claude | C1-C5 + reactivacion |
 | 1.17 | Implementar modulo renovaciones | PENDIENTE | Claude | Deteccion, notificacion, seguimiento |
-| 1.18 | Implementar modulo siniestros | PENDIENTE | Claude | Vinculado a poliza, no solo a cliente |
-| 1.19 | Implementar modulo gruas | PENDIENTE | Claude | Vinculado a poliza |
-| 1.20 | Implementar modulo endosos | PENDIENTE | Claude | 5 tipos + calculo de costo automatico + WhatsApp |
-| 1.21 | Implementar modulo promociones | PENDIENTE | Claude | 4 tipos: %, fijo, meses gratis, $0 enganche |
-| 1.22 | Implementar modulo cotizaciones (integracion) | PENDIENTE | Claude | Solo referencia externa, sin JOINs |
-| 1.23 | Implementar modulo notificaciones | PENDIENTE | Claude | WhatsApp (Evolution API) + Telegram |
-| 1.24 | Implementar modulo reportes | PENDIENTE | Claude | Excel via openpyxl, sin export de clientes |
-| 1.25 | Implementar modulo dashboard | PENDIENTE | Claude | Dashboard por departamento + principal |
-| 1.26 | Implementar modulo administracion | PENDIENTE | Claude | Empleados, roles, permisos, config, audit log |
-| 1.27 | Implementar StatusUpdater (job diario) | PENDIENTE | Claude | Celery + Redis, corre a medianoche |
-| 1.28 | Implementar sistema de backup pgBackRest | PENDIENTE | Claude | Full semanal + diff diario + WAL continuo al VPS 2 |
-| 1.29 | Tests unitarios y de integracion backend | PENDIENTE | Claude | pytest + httpx async |
+| 1.18 | Implementar modulo siniestros | PENDIENTE | Claude | Vinculado a POLIZA. Ajustadores, guardias, pases |
+| 1.19 | Implementar modulo gruas | PENDIENTE | Claude | Vinculado a poliza. Proveedores, elegibilidad |
+| 1.20 | Implementar modulo endosos | PENDIENTE | Claude | 5 tipos + costo auto + WhatsApp |
+| 1.21 | Implementar modulo promociones | PENDIENTE | Claude | 4 tipos: %, fijo, meses gratis, $0 enganche. JSONB |
+| 1.22 | Implementar modulo cotizaciones (integracion) | PENDIENTE | Claude | Solo quote_external_id. Sin JOINs |
+| 1.23a | Implementar modulo notificaciones - WhatsApp | PENDIENTE | Claude | Evolution API. Plantillas, cola Celery |
+| 1.23b | Implementar modulo notificaciones - Telegram | PENDIENTE | Claude | Bot API. Alertas siniestros, admin |
+| 1.24 | Implementar modulo reportes | PENDIENTE | Claude | openpyxl. SIN export de lista de clientes |
+| 1.25 | Implementar modulo dashboard | PENDIENTE | Claude | Por departamento + principal |
+| 1.26 | Implementar modulo administracion | PENDIENTE | Claude | Config, audit log, gestion roles/permisos |
+| 1.27 | Implementar StatusUpdater (job diario Celery) | PENDIENTE | Claude | Corre a medianoche. Actualiza pagos y polizas |
+| 1.28 | Implementar sistema de backup pgBackRest | PENDIENTE | Claude | Full semanal + diff diario + WAL continuo |
+| 1.29 | Tests unitarios e integracion backend | PENDIENTE | Claude | pytest + httpx async + factory_boy |
+
+### Bugs corregidos por code review (2026-02-15):
+- **Anti-bruteforce**: Lockout a 10 intentos era inalcanzable porque rate-limit cortaba a 5 sin incrementar contador. Corregido: ahora son checks independientes.
+- **Permisos duplicados**: Existia un `permissions.py` stub viejo ademas del `dependencies.py` real. Eliminado el duplicado.
+- **Alembic env.py**: No importaba `app.models`, asi que autogenerate no descubria los 49 modelos. Corregido.
 
 ## FASE 2: FRONTEND WEB
 
@@ -114,14 +188,14 @@
 | 5.6 | Corte: apagar sistema viejo, activar nuevo | PENDIENTE | Usuario | Fin de semana preferiblemente |
 | 5.7 | Publicar apps moviles (APK/TestFlight) | PENDIENTE | Usuario | Claude genera builds |
 
-## TRABAJO YA REALIZADO
+## TRABAJO YA REALIZADO (pre-proyecto)
 
 | # | Tarea | Estado | Notas |
 |---|-------|--------|-------|
 | P.1 | Crear CLAUDE.md del proyecto | TERMINADA | Documentacion para Claude Code |
 | P.2 | Documentar logica de negocio completa (26 modulos) | TERMINADA | docs/INFORME_LOGICA_NEGOCIO.md |
 | P.3 | Analizar MySQL actual (45+ tablas) | TERMINADA | docs/INFORME_ANALISIS_MYSQL.md |
-| P.4 | Disenar schema PostgreSQL v1 (42 tablas) | TERMINADA | database/postgresql/schema.sql (tiene errores pendientes) |
+| P.4 | Disenar schema PostgreSQL v1 (42 tablas) | TERMINADA | database/postgresql/schema.sql |
 | P.5 | Documentar hallazgos de optimizacion (45 findings) | TERMINADA | docs/INFORME_OPTIMIZACION.md |
 | P.6 | Refactorizar codigo actual (55+ archivos) | TERMINADA | Separacion View→Controller→Service→DAO |
 | P.7 | Planear arquitectura nuevo sistema | TERMINADA | nuevo-sistema/01-ARQUITECTURA.md |
@@ -143,3 +217,26 @@
 | D.3 | ~~Prioridad de apps moviles~~ | **App Cobrador primero** | DECIDIDO |
 | D.4 | ~~Dominio del sistema~~ | Ya tiene dominio | DECIDIDO |
 | D.5 | ~~Proveedor VPS~~ | Ya tiene VPS con EasyPanel | DECIDIDO |
+
+---
+
+## NOTAS PARA EL REVIEWER
+
+### Arquitectura de seguridad (auth)
+- **JWT RS256**: Clave privada firma tokens (15 min), clave publica verifica. Keys en `backend/keys/` (gitignored)
+- **Refresh token**: UUID opaco, hash SHA-256 en Redis. Rotacion obligatoria. Revocacion por familia
+- **Cookie**: httpOnly + Secure + SameSite=Strict, scoped a `/api/v1/auth`
+- **Rate limiting**: 5 intentos/usuario + 10/IP en 15 min (ventana). Lockout: 10 intentos → 30 min bloqueo
+- **Passwords**: Argon2id (time=3, mem=64MB). bcrypt como fallback para passwords migrados con auto-rehash
+- **Permisos**: `require_permission("modulo.accion")` como Depends() en cada endpoint. Consulta tabla `role_permission` en BD
+
+### Separacion dev/prod (Docker)
+- `docker-compose.yml`: Solo para desarrollo local. Redis sin auth, puertos expuestos. NUNCA usar en VPS
+- `docker-compose.prod.yml`: Redis con requirepass, puertos cerrados, passwords por env vars. Para EasyPanel
+- CSP header se agregara cuando el frontend se integre (irrelevante para API pura)
+
+### Sobre el schema seller/collector vs employee
+El DDL actual (`schema.sql`) tiene tablas separadas `seller` y `collector`. Esto es **intencional** para la fase
+de migracion de datos desde MySQL. La unificacion a tabla `employee` (con flags `es_vendedor`, `es_cobrador`,
+`es_ajustador` y tabla `employee_department` para multi-departamento) se implementara como una migracion Alembic
+en las tareas 1.6a y 1.7. Los modelos SQLAlchemy ya estan preparados para refactorizarse en ese momento.
