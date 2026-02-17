@@ -9,7 +9,7 @@
 Este proyecto involucra **dos codebases separadas** que coexisten durante el desarrollo:
 
 ### Sistema Actual (MySQL) — Repo: `D:\pqtcreacion` (rama `claude`)
-- Aplicacion web actual en produccion (Python/Flask + MySQL + Jinja2)
+- Aplicacion desktop actual en produccion (Python/PyQt5 + MySQL)
 - Se le hicieron mejoras: refactorizacion MVC, unificacion de empleados, correccion de bugs
 - Los scripts de migracion de empleados (`database/migrations/`) viven aqui
 - Este sistema seguira en produccion hasta que el nuevo este listo para el corte
@@ -23,12 +23,16 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
   La BD ahora tiene 48 tablas (49 originales - seller - collector + employee + employee_department
   + employee_permission_override = 48 + 2 nuevas = 50 modelos, 48 tablas en BD).
 
-### Flujo de migracion planeado
+### Flujo de migracion planeado (ACTUALIZADO 2026-02-17)
 1. Unificar empleados en MySQL actual (tarea 1.1, la hace el usuario)
 2. Verificar que el sistema actual funciona con empleados unificados (tarea 1.2)
-3. Construir el nuevo sistema completo sobre PostgreSQL (Fase 1-3)
-4. Migrar datos MySQL → PostgreSQL con scripts automatizados (Fase 4)
-5. Desplegar nuevo sistema y hacer corte (Fase 5)
+3. Construir el nuevo sistema completo sobre PostgreSQL (Fase 1)
+4. **Desplegar API en VPS + ETL GRADUAL** (solo datos del cobrador primero) (Fase 4-5)
+5. **Coexistencia**: Desktop sigue corriendo con MySQL, apps moviles usan PostgreSQL
+6. Desktop obtiene pantalla "Pagos por Aprobar" que lee del API de nuevo-sistema
+7. Expandir gradualmente: mas datos migrados, mas apps, eventualmente retirar desktop
+
+**NOTA**: NO es un "corte" (big bang). Es coexistencia gradual. Ver `memory/PLAN_MAESTRO_MIGRACION.md`
 
 ---
 
@@ -58,10 +62,15 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 0.8 | ~~Instalar Evolution API para WhatsApp~~ | TERMINADA | Usuario | Ya la tiene corriendo |
 | 0.9 | ~~Crear proyecto FastAPI (estructura)~~ | TERMINADA | Claude | 148+ archivos, 21 modulos, monolito modular |
 | 0.10 | ~~Docker Compose dev + prod~~ | TERMINADA | Claude | PG 16 + PgBouncer + Redis. Dev y prod separados |
-| 0.11 | ~~Schema PostgreSQL v2.1~~ | TERMINADA | Claude | 1639 lineas, 49 tablas, 31 ENUMs, correcciones B8-B12 |
+| 0.11 | ~~Schema PostgreSQL v2.1~~ | TERMINADA | Claude | 1639 lineas, 49 tablas, 31 ENUMs. **NOTA**: B9 requiere re-correccion (faltan quarterly_4, semiannual_2, monthly_12). B8 esperando confirmacion del usuario |
 | 0.12 | ~~Git init + push a GitHub~~ | TERMINADA | Claude | Branches main + develop creados y pusheados |
 | 0.13 | ~~Alembic config + baseline~~ | TERMINADA | Claude | Revision 1a3018309e6e. Schema cargado via DDL |
 | 0.14 | ~~Docker levantado y verificado~~ | TERMINADA | Claude | PG:5433, PgBouncer:6432, Redis:6379 |
+| 0.15 | Instalar PostgreSQL 17 + PostGIS en EasyPanel | TERMINADA | Claude + Usuario | Imagen postgis/postgis:17-3.5. PostGIS 3.5.2. Host: easy100.onesitecloud.com:5432 |
+| 0.16 | Instalar pgAdmin 4 en EasyPanel | TERMINADA | Claude + Usuario | Conectado via red interna |
+| 0.17 | Instalar DBeaver en PC del usuario | TERMINADA | Usuario | Conectado a PostgreSQL del VPS |
+| 0.18 | Desplegar schema en PostgreSQL del VPS | TERMINADA | Claude | 52 tablas, 32 ENUMs, 184 indices, PostGIS, payment_preapproval |
+| 0.19 | Revision campos employee + RBAC simplificado | TERMINADA | Claude + Usuario | 9 campos nuevos en employee, is_field_worker en employee_department, 4 roles, 13 permisos, 4 departamentos. Migracion ejecutada en VPS |
 
 ## FASE 1: BASE DE DATOS Y BACKEND CORE
 
@@ -141,6 +150,9 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 1.27 | Implementar StatusUpdater (job diario Celery) | TERMINADA | Claude | Core logic + Celery task + Beat scheduler + trigger manual POST /admin/status-update. Commit 28 |
 | 1.28 | Implementar sistema de backup pgBackRest | TERMINADA | Claude | Full semanal + diff diario + WAL continuo |
 | 1.29 | Tests unitarios e integracion backend | TERMINADA | Claude | 43 tests: security (11), StatusUpdater (10), pagos (7), auth integration (10), conftest con mock fixtures. Commit 31 |
+| 1.30 | Corregir ENUM payment_plan_type (B9 ampliado) | TERMINADA | Claude | Agregados quarterly_4, semiannual_2, monthly_12. Desplegado en VPS 2026-02-17 |
+| 1.31 | Confirmar metodos de pago reales (B8) | PENDIENTE | Usuario | Consulta con gerente de cobranza |
+| 1.32 | Crear modulo payment_preapproval | PENDIENTE | Claude | Tabla + 3 endpoints. Pre-aprobacion de pagos del cobrador en campo |
 
 ### Bugs corregidos por code review (2026-02-15):
 - **Anti-bruteforce**: Lockout a 10 intentos era inalcanzable porque rate-limit cortaba a 5 sin incrementar contador. Corregido: ahora son checks independientes.
@@ -188,7 +200,10 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 3.11 | App Ajustador: guardia del dia | PENDIENTE | Claude | |
 | 3.12 | Tests apps moviles | PENDIENTE | Claude | |
 
-## FASE 4: MIGRACION DE DATOS
+## FASE 4: MIGRACION DE DATOS (ACTUALIZADA: ETL GRADUAL, NO BIG BANG)
+
+**CAMBIO ESTRATEGICO (2026-02-17)**: La migracion es GRADUAL via ETL, no big bang.
+Primero se migran solo datos del cobrador, despues se expande. Ver `memory/PLAN_MAESTRO_MIGRACION.md`
 
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
@@ -197,8 +212,13 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 4.3 | Validar datos migrados (queries de verificacion) | PENDIENTE | Usuario | Claude da las queries |
 | 4.4 | Ejecutar migracion en produccion | PENDIENTE | Usuario | Ventana de mantenimiento |
 | 4.5 | Verificar sistema nuevo con datos reales | PENDIENTE | Usuario | |
+| 4.6 | Escribir script ETL parcial (solo datos cobrador) | PENDIENTE | Claude | Lee MySQL → limpia → inserta en PostgreSQL. Solo clientes vigentes y sus datos |
+| 4.7 | Configurar ETL periodico (sync MySQL → PostgreSQL) | PENDIENTE | Claude | Cron job cada hora o cada noche |
 
-## FASE 5: DESPLIEGUE Y CORTE
+## FASE 5: DESPLIEGUE (ACTUALIZADA: COEXISTENCIA, NO CORTE)
+
+**CAMBIO ESTRATEGICO (2026-02-17)**: NO se apaga el sistema viejo. Desktop sigue corriendo
+con MySQL. Nuevo sistema corre en paralelo. Se despliega ANTES de la migracion de datos.
 
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
@@ -207,7 +227,18 @@ Este proyecto involucra **dos codebases separadas** que coexisten durante el des
 | 5.3 | Configurar SSL/TLS (Let's Encrypt) | PENDIENTE | EasyPanel | Automatico en EasyPanel |
 | 5.4 | Configurar backup automatico pgBackRest | PENDIENTE | Claude + Usuario | |
 | 5.5 | Pruebas de usuario final (UAT) | PENDIENTE | Usuario + equipo | 1-2 semanas |
-| 5.6 | Corte: apagar sistema viejo, activar nuevo | PENDIENTE | Usuario | Fin de semana preferiblemente |
+| 5.6 | ~~Corte: apagar sistema viejo, activar nuevo~~ | CANCELADA | — | Reemplazada por coexistencia gradual. Desktop se retira eventualmente (Fase 7+) |
+| 5.8 | Desplegar backend ANTES de migracion | PENDIENTE | Claude + Usuario | API + PostgreSQL + Redis en EasyPanel. Coexistencia con desktop |
+
+## FASE DESKTOP: INTEGRACION PRE-APROBACIONES EN DESKTOP (pqtcreacion)
+
+**NUEVO (2026-02-17)**: El desktop necesita comunicarse con el API de nuevo-sistema
+para el flujo de pre-aprobacion de pagos del cobrador.
+
+| # | Tarea | Estado | Responsable | Notas |
+|---|-------|--------|-------------|-------|
+| D.1 | Crear pantalla "Pagos por Aprobar" en desktop | PENDIENTE | Claude | Vista PyQt5 que lee del API. Similar a quotes_api_client pattern |
+| D.2 | Crear preapproval_api_client.py en desktop | PENDIENTE | Claude | Cliente HTTP: aprobar→MySQL+API, rechazar→solo API |
 | 5.7 | Publicar apps moviles (APK/TestFlight) | PENDIENTE | Usuario | Claude genera builds |
 
 ## TRABAJO YA REALIZADO (pre-proyecto)

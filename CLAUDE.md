@@ -176,12 +176,37 @@ Documentacion del sistema actual en `docs/`:
 - **context7 MCP**: Cuando necesites contexto actualizado sobre una tecnologia (FastAPI, Next.js, SQLAlchemy, React Native, etc.), usa el MCP `context7` para consultar la documentacion vigente. No asumas APIs o patrones de versiones anteriores
 - Antes de escribir codigo que dependa de una API especifica de un framework, verifica con context7 que la API sigue vigente en la version actual
 
+## Plan Maestro y Estrategia de Coexistencia (2026-02-17)
+
+> **FUENTE DE VERDAD para la estrategia**: `memory/PLAN_MAESTRO_MIGRACION.md` en el repo pqtcreacion
+
+- **Desktop (pqtcreacion)** sigue corriendo con MySQL. NO se apaga.
+- **nuevo-sistema** corre en VPS con PostgreSQL como backend para apps moviles
+- **ETL gradual** sincroniza MySQL → PostgreSQL (primero solo datos del cobrador)
+- **Pre-aprobacion de pagos**: cobrador captura en app → PostgreSQL → oficina aprueba en desktop → MySQL
+- **Modulo nuevo**: `payment_preapproval` (tabla + 3 endpoints: POST crear, GET listar, PUT aprobar/rechazar)
+- **Fases en Notion**: Fase 0-5 + Fase Desktop (integracion pre-aprobaciones en pqtcreacion)
+- **Orden de ejecucion**: Fase 0 (infra) → Fase 1 (corregir schema) → Fase 5 (deploy API) → Fase 4 (ETL) → Fase Desktop → Fase 3 (App Cobrador)
+
+### Planes de pago REALES (B9 corregido)
+- **RC**: cash, cash_2_installments, monthly_7
+- **AMPLIA / AMPLIA SELECT**: cash, cash_2_installments, quarterly_4, semiannual_2, monthly_12
+- ENUM `payment_plan_type` debe tener los 6 valores
+- Validacion por cobertura en el servicio
+
+### Metodos de pago (B8 - PENDIENTE confirmacion)
+- Esperando confirmacion del usuario con gerente de cobranza
+- Candidatos: cash, deposit, transfer, tarjeta, crucero, konfio, terminal_banorte
+
 ## Tracking del Proyecto
 
 - **Notion**: Base de datos "Checklist del Proyecto" dentro de "Nuevo Sistema CRM Seguros Protegrt"
-- **REGLA OBLIGATORIA**: Al trabajar en cualquier tarea, SIEMPRE actualizar Notion:
+- **Notion data source ID**: `3c423189-ff2c-4f9e-b554-1db4f8b6ee62`
+- **Checklist local**: `05-CHECKLIST-PROYECTO.md` (para el inspector externo)
+- **REGLA OBLIGATORIA**: Al trabajar en cualquier tarea, SIEMPRE actualizar **AMBOS** (Notion Y 05-CHECKLIST):
   - Iniciar tarea → Estado: EN PROCESO
   - Completar → Estado: TERMINADA
   - Bloqueada → Estado: BLOQUEADA (con nota del motivo)
-  - Tarea nueva descubierta → Crearla en Notion con fase, prioridad y responsable
-  - NUNCA omitir la actualizacion de Notion
+  - Tarea nueva descubierta → Crearla en Notion Y en 05-CHECKLIST con fase, prioridad y responsable
+  - NUNCA omitir la actualizacion de Notion NI del checklist
+  - NUNCA dejar que Notion y 05-CHECKLIST se desincronicen

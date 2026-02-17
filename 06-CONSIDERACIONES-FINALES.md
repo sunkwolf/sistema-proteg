@@ -11,8 +11,8 @@ El schema en `database/postgresql/schema.sql` tiene 5 errores que deben corregir
 
 | # | Error | Correccion |
 |---|-------|-----------|
-| B8 | `payment_method_type` ENUM tiene `cash, transfer, card, check` | Debe ser: `cash, deposit, transfer, crucero, konfio, terminal_banorte` |
-| B9 | `payment_plan_type` tiene `monthly_12` | Debe ser `monthly_7` (las polizas son de 7 pagos, no 12) |
+| B8 | `payment_method_type` ENUM tiene `cash, transfer, card, check` | **ESPERANDO CONFIRMACION**: usuario revisara con gerente de cobranza los metodos reales. Candidatos: cash, deposit, transfer, crucero, konfio, terminal_banorte, tarjeta. |
+| B9 | `payment_plan_type` solo tiene 3 valores | **CORRECCION AMPLIADA**: No es solo monthly_7. Los planes reales dependen de la cobertura: **RC**: cash, cash_2_installments, monthly_7. **AMPLIA/AMPLIA SELECT**: cash, cash_2_installments, quarterly_4, semiannual_2, monthly_12. Total 6 valores en el ENUM + regla de validacion por cobertura. |
 | B10 | Tabla `policy` no tiene campo `prima_total` | Agregar `prima_total NUMERIC(12,2)` — es el costo total de la poliza |
 | B11 | Tabla `client` no tiene campo `rfc` | Agregar `rfc VARCHAR(13)` — identificacion fiscal |
 | B12 | `collector.receipt_limit` default es 5 | Debe ser 50 (default real en produccion) |

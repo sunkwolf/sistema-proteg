@@ -6,6 +6,16 @@ Usage:
     python -m app.scripts.seed_rbac
 
 Idempotent: safe to re-run. Uses INSERT ... ON CONFLICT DO NOTHING.
+
+Roles (4):
+    admin    - Acceso total al sistema
+    gerente  - Aprobaciones, reportes, supervision (scoped por departamento)
+    oficina  - Ve todo, captura, aprueba polizas
+    campo    - App movil, solo ve lo asignado, captura con aprobacion
+
+Permissions (13): "todos ven, pocos editan"
+    Todo lo que NO esta en esta lista es accesible para cualquier usuario autenticado.
+    Restricciones por departamento se aplican en el middleware, no en la tabla role_permission.
 """
 
 import asyncio
@@ -29,239 +39,98 @@ settings = get_settings()
 # ---------------------------------------------------------------------------
 
 DEPARTMENTS = [
-    {"name": "Administracion", "description": "Administracion general del sistema"},
-    {"name": "Ventas", "description": "Departamento de ventas de polizas"},
-    {"name": "Cobranza", "description": "Departamento de cobranza y recaudacion"},
-    {"name": "Siniestros", "description": "Departamento de siniestros y ajuste"},
-    {"name": "Recursos Humanos", "description": "Gestion de personal, vacaciones, quejas"},
+    {"name": "Administracion", "description": "Administracion general, RH, gestion del sistema"},
+    {"name": "Ventas", "description": "Venta de polizas y renovaciones"},
+    {"name": "Cobranza", "description": "Cobranza, recaudacion, tarjetas y recibos"},
+    {"name": "Siniestros", "description": "Atencion de siniestros, gruas y ajuste"},
 ]
 
 ROLES = [
-    {"name": "admin", "description": "Administrador con acceso total al sistema"},
-    {"name": "gerente", "description": "Gerente de departamento. Acceso por departamento, no global"},
-    {"name": "auxiliar", "description": "Auxiliar de oficina. Permisos configurables por admin"},
-    {"name": "cobrador", "description": "Cobrador de campo. App movil: cobros, recibos, rutas"},
-    {"name": "vendedor", "description": "Vendedor de campo. App movil: polizas, cotizaciones, renovaciones"},
-    {"name": "ajustador", "description": "Ajustador de campo. App movil: siniestros, gruas, guardias"},
-    {"name": "viewer", "description": "Solo lectura. Consulta sin modificar datos"},
+    {"name": "admin", "description": "Acceso total al sistema. Configuracion, usuarios, auditoria"},
+    {
+        "name": "gerente",
+        "description": (
+            "Gerente de departamento. Aprobaciones, reportes, supervision de personal. "
+            "Permisos sensibles se aplican segun departamento en el middleware"
+        ),
+    },
+    {
+        "name": "oficina",
+        "description": (
+            "Personal de oficina. Ve todo, captura datos, aprueba polizas. "
+            "Permisos de departamento especifico se aplican en el middleware"
+        ),
+    },
+    {
+        "name": "campo",
+        "description": (
+            "Personal de campo (app movil). Ve solo lo asignado, "
+            "captura polizas y pagos que quedan pendientes de aprobacion"
+        ),
+    },
 ]
 
-# Permissions: module.action format
-# Organized by module for clarity
+# Permissions: 13 total
+# Format: (name, description)
+# Department scoping is NOT in this table; it's enforced by the middleware.
+# Comments note which departments the permission applies to.
 PERMISSIONS = [
-    # --- Polizas ---
-    ("policies.create", "Crear polizas nuevas"),
-    ("policies.read", "Ver todas las polizas"),
-    ("policies.read_own", "Ver solo polizas propias (vendedor)"),
-    ("policies.update", "Editar polizas existentes"),
-    ("policies.delete", "Eliminar polizas"),
-    ("policies.change_seller", "Cambiar vendedor asignado a poliza"),
-    # --- Clientes ---
-    ("clients.create", "Crear clientes nuevos"),
-    ("clients.read", "Ver todos los clientes"),
-    ("clients.read_assigned", "Ver solo clientes asignados"),
-    ("clients.update", "Editar datos de clientes"),
-    ("clients.delete", "Eliminar clientes"),
-    # --- Vehiculos ---
-    ("vehicles.create", "Registrar vehiculos nuevos"),
-    ("vehicles.read", "Ver vehiculos"),
-    ("vehicles.update", "Editar datos de vehiculos"),
-    # --- Coberturas ---
-    ("coverages.create", "Crear coberturas y precios"),
-    ("coverages.read", "Ver tabla de coberturas y precios"),
-    ("coverages.update", "Editar coberturas y precios"),
-    # --- Pagos ---
-    ("payments.create", "Registrar pagos"),
-    ("payments.read", "Ver pagos"),
-    ("payments.update", "Editar pagos (solo depto Cobranza)"),
-    ("payments.reverse", "Revertir un pago aplicado"),
-    # --- Propuestas de pago ---
-    ("proposals.create", "Crear propuesta de cobro (cobrador campo)"),
-    ("proposals.read", "Ver todas las propuestas"),
-    ("proposals.read_own", "Ver solo propuestas propias"),
-    ("proposals.approve", "Aprobar propuestas de pago"),
-    ("proposals.reject", "Rechazar propuestas de pago"),
-    # --- Cobranza / Tarjetas ---
-    ("collections.create", "Crear avisos de visita y registros de cobranza"),
-    ("collections.read", "Ver todas las tarjetas de cobranza"),
-    ("collections.read_own_route", "Ver solo ruta de cobranza propia"),
-    ("collections.assign", "Asignar tarjetas a cobradores"),
-    ("collections.reassign", "Reasignar tarjetas entre cobradores"),
-    # --- Recibos ---
-    ("receipts.create_batch", "Crear lotes de recibos"),
-    ("receipts.assign", "Asignar recibos a cobradores"),
-    ("receipts.read", "Ver todos los recibos"),
-    ("receipts.read_assigned", "Ver solo recibos asignados"),
-    ("receipts.use", "Marcar recibo como usado"),
-    ("receipts.cancel", "Cancelar o reportar extravio de recibo"),
-    # --- Siniestros ---
-    ("incidents.create", "Registrar siniestro nuevo"),
-    ("incidents.read", "Ver todos los siniestros"),
-    ("incidents.read_assigned", "Ver solo siniestros asignados"),
-    ("incidents.update", "Actualizar siniestros"),
-    ("incidents.close", "Cerrar un siniestro"),
-    ("incidents.admin", "Gestionar guardias y turnos de ajustadores"),
-    # --- Gruas ---
-    ("tow_services.create", "Solicitar servicio de grua"),
-    ("tow_services.read", "Ver todos los servicios de grua"),
-    ("tow_services.read_assigned", "Ver solo servicios de grua asignados"),
-    ("tow_services.update", "Actualizar servicio de grua"),
-    ("tow_services.admin", "Gestionar proveedores de grua"),
-    # --- Endosos ---
-    ("endorsements.create", "Crear endoso"),
-    ("endorsements.read", "Ver endosos"),
-    ("endorsements.approve", "Aprobar endoso"),
-    ("endorsements.reject", "Rechazar endoso"),
-    ("endorsements.apply", "Aplicar endoso aprobado"),
-    # --- Cancelaciones ---
-    ("cancellations.create", "Crear cancelacion de poliza (C1-C5)"),
-    ("cancellations.read", "Ver cancelaciones"),
-    ("cancellations.undo", "Reactivar poliza cancelada"),
-    # --- Renovaciones ---
-    ("renewals.create", "Crear renovacion de poliza"),
-    ("renewals.read", "Ver todas las renovaciones"),
-    ("renewals.read_assigned", "Ver renovaciones asignadas (vendedor)"),
-    # --- Promociones ---
-    ("promotions.create", "Crear promociones"),
-    ("promotions.read", "Ver promociones"),
-    ("promotions.update", "Editar promociones"),
-    ("promotions.apply", "Aplicar promocion a poliza"),
-    # --- Empleados ---
-    ("employees.create", "Crear empleados"),
-    ("employees.read", "Ver empleados"),
-    ("employees.update", "Editar datos de empleados"),
-    ("employees.toggle_status", "Activar/desactivar empleados"),
-    # --- Reportes ---
-    ("reports.read", "Ver y descargar reportes"),
-    ("reports.admin", "Reportes de comisiones y pagos del dia"),
-    # --- Dashboard ---
-    ("dashboard.view", "Ver dashboard general"),
-    ("dashboard.collection", "Ver dashboard de cobranza"),
-    # --- Notificaciones ---
-    ("notifications.send", "Enviar notificaciones (WhatsApp/Telegram)"),
-    ("notifications.read", "Ver historial de notificaciones"),
-    # --- Administracion ---
-    ("admin.access", "Acceder al panel de administracion"),
-    ("admin.config", "Modificar configuracion del sistema"),
-    ("admin.audit_log", "Ver log de auditoria"),
-    # --- Guardias / Turnos ---
-    ("shifts.read", "Ver turnos y guardias"),
-    ("shifts.manage", "Gestionar turnos y guardias"),
+    # --- Admin-only (3) ---
+    ("system.config", "Configurar parametros del sistema y backups"),
+    ("users.manage", "Crear/editar usuarios, resetear passwords, asignar roles"),
+    ("roles.manage", "Crear/editar roles y asignar permisos"),
+    # --- Admin + Gerente (5) ---
+    ("audit.view", "Ver bitacora de auditoria del personal"),
+    ("employees.manage", "Alta, baja y edicion de empleados"),
+    ("payments.approve", "Aprobar pagos capturados. Dept: gerente de ventas aprueba"),
+    ("payments.modify", "Modificar pagos existentes. Dept: solo Cobranza"),
+    ("cancellations.execute", "Cancelar polizas C1-C5. Dept: solo gerente Cobranza o admin"),
+    # --- Admin + Gerente + Oficina (4) ---
+    ("policies.approve", "Aprobar polizas capturadas por vendedor de campo"),
+    ("endorsements.approve", "Aprobar endosos. Dept: solo Administracion"),
+    ("promotions.manage", "Crear y editar promociones. Dept: solo Cobranza o superior"),
+    ("receipts.batch", "Crear lotes de recibos y asignacion. Dept: solo personal Cobranza"),
+    # --- Admin + Gerente only (1) ---
+    ("cards.assign", "Asignar tarjetas de cobro a cobradores. Dept: gerente Cobranza"),
 ]
 
 # Role → list of permission names
-# admin gets ALL permissions (handled in code via wildcard, but we also assign explicitly)
 ROLE_PERMISSIONS: dict[str, list[str]] = {
-    "admin": [p[0] for p in PERMISSIONS],  # ALL
+    "admin": [p[0] for p in PERMISSIONS],  # ALL 13
 
     "gerente": [
-        # Read everything in their department
-        "policies.read", "clients.read", "vehicles.read", "coverages.read",
-        "payments.read", "proposals.read", "collections.read",
-        "receipts.read", "incidents.read", "tow_services.read",
-        "endorsements.read", "cancellations.read", "renewals.read",
-        "promotions.read", "notifications.read",
-        # Manage employees in their department
-        "employees.read", "employees.update",
-        # Approve/reject
-        "proposals.approve", "proposals.reject",
-        "endorsements.approve", "endorsements.reject",
-        "policies.update", "policies.change_seller",
-        # Collections management
-        "collections.assign", "collections.reassign",
-        "receipts.assign",
-        # Reports & dashboard
-        "reports.read", "reports.admin",
-        "dashboard.view", "dashboard.collection",
-        # Shifts
-        "shifts.read", "shifts.manage",
-        # Incidents & tow admin
-        "incidents.admin", "tow_services.admin",
-        # Cancellations (create + approve undo)
-        "cancellations.create",
-    ],
-
-    "auxiliar": [
+        # Supervision
+        "audit.view",
+        "employees.manage",
+        # Payments
+        "payments.approve",
+        "payments.modify",
+        # Cancellations
+        "cancellations.execute",
         # Policies
-        "policies.create", "policies.read",
-        # Clients
-        "clients.create", "clients.read", "clients.update",
-        # Vehicles & coverages
-        "vehicles.create", "vehicles.read", "vehicles.update",
-        "coverages.read",
-        # Payments (read only, Cobranza edits)
-        "payments.read", "payments.create",
-        # Receipts
-        "receipts.read",
+        "policies.approve",
         # Endorsements
-        "endorsements.create", "endorsements.read",
-        # Renewals
-        "renewals.read",
-        # Promotions (read)
-        "promotions.read",
-        # Dashboard
-        "dashboard.view",
-        # Notifications (read)
-        "notifications.read",
-    ],
-
-    "cobrador": [
-        # Proposals (core function)
-        "proposals.create", "proposals.read_own",
+        "endorsements.approve",
+        # Promotions
+        "promotions.manage",
         # Receipts
-        "receipts.read_assigned", "receipts.use",
-        # Clients (assigned only)
-        "clients.read_assigned",
-        # Collections (own route + create visit notices)
-        "collections.read_own_route", "collections.create",
-        # Payments (read)
-        "payments.read",
-        # Dashboard
-        "dashboard.view",
-    ],
+        "receipts.batch",
+        # Cards
+        "cards.assign",
+    ],  # 10
 
-    "vendedor": [
-        # Policies (core function)
-        "policies.create", "policies.read_own",
-        # Clients
-        "clients.create", "clients.read",
-        # Vehicles & coverages
-        "vehicles.create", "vehicles.read", "vehicles.update",
-        "coverages.read",
-        # Renewals (assigned)
-        "renewals.read_assigned",
-        # Promotions (read, to inform clients)
-        "promotions.read",
-        # Dashboard
-        "dashboard.view",
-    ],
+    "oficina": [
+        # Policies (auxiliar admin revisa y aprueba polizas del vendedor)
+        "policies.approve",
+        # Endorsements (solo depto Administracion, enforced in middleware)
+        "endorsements.approve",
+        # Promotions (solo depto Cobranza, enforced in middleware)
+        "promotions.manage",
+        # Receipts (solo personal Cobranza, enforced in middleware)
+        "receipts.batch",
+    ],  # 4
 
-    "ajustador": [
-        # Incidents (core function)
-        "incidents.read", "incidents.read_assigned", "incidents.create",
-        "incidents.update",
-        # Tow services
-        "tow_services.read", "tow_services.read_assigned", "tow_services.create",
-        "tow_services.update",
-        # Shifts
-        "shifts.read",
-        # Read basics
-        "clients.read",
-        "policies.read",
-        # Dashboard
-        "dashboard.view",
-    ],
-
-    "viewer": [
-        # Read-only across most modules
-        "policies.read", "clients.read", "vehicles.read", "coverages.read",
-        "payments.read", "proposals.read", "collections.read",
-        "receipts.read", "incidents.read", "tow_services.read",
-        "endorsements.read", "cancellations.read", "renewals.read",
-        "promotions.read", "notifications.read",
-        "dashboard.view",
-        "reports.read",
-    ],
+    "campo": [],  # 0 — solo ve lo asignado, captura con aprobacion
 }
 
 
@@ -324,7 +193,7 @@ async def seed_permissions(session: AsyncSession) -> dict[str, int]:
             session.add(obj)
             await session.flush()
             mapping[perm_name] = obj.id
-    logger.info("  %d permissions seeded (%d new)", len(mapping), len(PERMISSIONS))
+    logger.info("  %d permissions seeded", len(mapping))
     return mapping
 
 

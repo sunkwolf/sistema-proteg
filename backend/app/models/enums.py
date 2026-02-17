@@ -57,6 +57,15 @@ class PaymentPlanType(str, enum.Enum):
     CASH = "cash"
     CASH_2_INSTALLMENTS = "cash_2_installments"
     MONTHLY_7 = "monthly_7"
+    QUARTERLY_4 = "quarterly_4"
+    SEMIANNUAL_2 = "semiannual_2"
+    MONTHLY_12 = "monthly_12"
+
+
+class PreapprovalStatusType(str, enum.Enum):
+    PENDING_APPROVAL = "pending_approval"
+    APPROVED = "approved"
+    REJECTED = "rejected"
 
 
 class OfficeDeliveryType(str, enum.Enum):

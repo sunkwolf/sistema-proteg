@@ -128,6 +128,14 @@ class Employee(Base):
     sales_target: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # Collector-specific
     receipt_limit: Mapped[int] = mapped_column(Integer, nullable=False, server_default="50")
+    # HR / personal data
+    hire_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    termination_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    curp: Mapped[str | None] = mapped_column(String(18), nullable=True)
+    rfc: Mapped[str | None] = mapped_column(String(13), nullable=True)
+    emergency_contact: Mapped[str | None] = mapped_column(Text, nullable=True)
+    emergency_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    photo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Common
     status: Mapped[EntityStatusType] = mapped_column(
         Enum(EntityStatusType, name="entity_status_type", create_type=False),
@@ -172,7 +180,7 @@ class Employee(Base):
 
 
 class EmployeeDepartment(Base):
-    """Junction table: employee ↔ department (M:N) with es_gerente flag."""
+    """Junction table: employee ↔ department (M:N) with es_gerente and is_field_worker flags."""
     __tablename__ = "employee_department"
 
     employee_id: Mapped[int] = mapped_column(
@@ -182,6 +190,7 @@ class EmployeeDepartment(Base):
         Integer, ForeignKey("department.id", ondelete="CASCADE"), primary_key=True
     )
     es_gerente: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+    is_field_worker: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
 
     # Relationships
     employee: Mapped[Employee] = relationship(back_populates="departments")

@@ -276,7 +276,21 @@ CREATE TYPE public.payment_method_type AS ENUM (
 CREATE TYPE public.payment_plan_type AS ENUM (
     'cash',
     'cash_2_installments',
-    'monthly_7'
+    'monthly_7',
+    'quarterly_4',
+    'semiannual_2',
+    'monthly_12'
+);
+
+
+--
+-- Name: preapproval_status_type; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.preapproval_status_type AS ENUM (
+    'pending_approval',
+    'approved',
+    'rejected'
 );
 
 
@@ -1225,6 +1239,13 @@ CREATE TABLE public.employee (
     seller_class public.seller_class_type,
     sales_target integer,
     receipt_limit integer DEFAULT 50 NOT NULL,
+    hire_date date,
+    termination_date date,
+    curp character varying(18),
+    rfc character varying(13),
+    emergency_contact text,
+    emergency_phone character varying(20),
+    photo_url text,
     status public.entity_status_type DEFAULT 'active'::public.entity_status_type NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
@@ -1238,7 +1259,8 @@ CREATE TABLE public.employee (
 CREATE TABLE public.employee_department (
     employee_id integer NOT NULL,
     department_id integer NOT NULL,
-    es_gerente boolean DEFAULT false NOT NULL
+    es_gerente boolean DEFAULT false NOT NULL,
+    is_field_worker boolean DEFAULT false NOT NULL
 );
 
 
@@ -1820,6 +1842,56 @@ CREATE SEQUENCE public.payment_proposal_id_seq
 --
 
 ALTER SEQUENCE public.payment_proposal_id_seq OWNED BY public.payment_proposal.id;
+
+
+--
+-- Name: payment_preapproval; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.payment_preapproval (
+    id integer NOT NULL,
+    policy_folio character varying(50) NOT NULL,
+    collector_id integer NOT NULL,
+    amount numeric(12,2) NOT NULL,
+    payment_method public.payment_method_type NOT NULL,
+    collected_at timestamp with time zone NOT NULL,
+    collector_notes text,
+    receipt_photo_url text,
+    status public.preapproval_status_type DEFAULT 'pending_approval'::public.preapproval_status_type NOT NULL,
+    reviewed_by integer,
+    reviewed_at timestamp with time zone,
+    rejection_reason text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_preapproval_amount CHECK ((amount > (0)::numeric))
+);
+
+
+--
+-- Name: TABLE payment_preapproval; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.payment_preapproval IS 'Pre-aprobaciones de pago capturadas por cobradores en app movil';
+
+
+--
+-- Name: payment_preapproval_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.payment_preapproval_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: payment_preapproval_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.payment_preapproval_id_seq OWNED BY public.payment_preapproval.id;
 
 
 --
@@ -3125,6 +3197,13 @@ ALTER TABLE ONLY public.payment_proposal ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
+-- Name: payment_preapproval id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payment_preapproval ALTER COLUMN id SET DEFAULT nextval('public.payment_preapproval_id_seq'::regclass);
+
+
+--
 -- Name: permission id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -3494,6 +3573,14 @@ ALTER TABLE ONLY public.payment
 
 ALTER TABLE ONLY public.payment_proposal
     ADD CONSTRAINT payment_proposal_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: payment_preapproval payment_preapproval_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payment_preapproval
+    ADD CONSTRAINT payment_preapproval_pkey PRIMARY KEY (id);
 
 
 --
@@ -4242,6 +4329,27 @@ CREATE INDEX idx_payment_proposal_policy ON public.payment_proposal USING btree 
 
 
 --
+-- Name: idx_preapproval_collector; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_preapproval_collector ON public.payment_preapproval USING btree (collector_id);
+
+
+--
+-- Name: idx_preapproval_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_preapproval_status ON public.payment_preapproval USING btree (status);
+
+
+--
+-- Name: idx_preapproval_created; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_preapproval_created ON public.payment_preapproval USING btree (created_at);
+
+
+--
 -- Name: idx_payment_receipt; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4974,6 +5082,22 @@ ALTER TABLE ONLY public.payment_proposal
 
 ALTER TABLE ONLY public.payment_proposal
     ADD CONSTRAINT payment_proposal_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.app_user(id) ON DELETE SET NULL;
+
+
+--
+-- Name: payment_preapproval payment_preapproval_collector_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payment_preapproval
+    ADD CONSTRAINT payment_preapproval_collector_id_fkey FOREIGN KEY (collector_id) REFERENCES public.employee(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: payment_preapproval payment_preapproval_reviewed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payment_preapproval
+    ADD CONSTRAINT payment_preapproval_reviewed_by_fkey FOREIGN KEY (reviewed_by) REFERENCES public.app_user(id) ON DELETE SET NULL;
 
 
 --
