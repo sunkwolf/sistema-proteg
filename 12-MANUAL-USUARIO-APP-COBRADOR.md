@@ -62,7 +62,7 @@ Esta es la primera pantalla que ves al entrar. De un vistazo tienes todo lo que 
 | **Cobros del día** | Cuántos cobros has registrado hoy |
 | **Cobrado** | Suma total del dinero cobrado hoy |
 | **Pend. Aprob.** | Propuestas que enviaste y aún no han sido revisadas por la gerencia |
-| 💰 **Comisión Quincena** | Lo que llevas acumulado de comisión en la quincena actual |
+| 💰 **Comisión Quincena** | Lo que llevas acumulado de comisión en la quincena actual (las comisiones se pagan quincenalmente) |
 | **Acciones rápidas** | Botones para ir directo a tus folios, tu ruta o tus propuestas |
 | **Últimas notificaciones** | Los avisos más recientes (aprobaciones, rechazos, etc.) |
 
@@ -151,7 +151,7 @@ Se usa cuando el cliente solo puede pagar una parte del monto total del pago.
 6. Opcional: foto del comprobante
 7. Toca **ENVIAR ABONO**
 
-> ⚠️ **Importante para el cliente:** Un abono parcial **no reactiva el servicio de grúa**. El servicio se reactiva únicamente cuando el pago está cubierto en su totalidad. Esta información aparece en el comprobante que recibe el cliente.
+> ⚠️ **Importante:** El comprobante que recibe el cliente (ticket impreso o WhatsApp) incluye automáticamente la leyenda: *"Este pago es parcial y no activa el servicio de grúa. El servicio se reactiva cuando el pago esté cubierto en su totalidad."* El cobrador no necesita explicarlo manualmente — el comprobante lo indica.
 
 ---
 
@@ -171,7 +171,7 @@ Se usa cuando fuiste al domicilio del cliente pero no se realizó el cobro.
 5. Opcional: imprime el aviso físico con tu impresora Bluetooth
 6. Toca **REGISTRAR AVISO**
 
-> 📍 Tu ubicación GPS se captura automáticamente como segunda evidencia junto con la foto.
+> 📍 Tu ubicación GPS se captura automáticamente al registrar o imprimir el aviso — sirve como segunda evidencia además de la foto. Doble verificación: foto (se ve la fachada y el aviso colocado) + coordenadas GPS.
 
 ---
 
@@ -248,8 +248,8 @@ Aquí encuentras todos los avisos del sistema.
 | 📋 Azul | Te **asignaron** una cuenta nueva |
 | 🗺️ Índigo | Tu **ruta del día** está lista |
 | 💵 Naranja | Alerta de **efectivo acumulado** |
-| 🔔 Gris | Una cuenta fue **removida** de tu asignación |
-| 💳 Verde | Un cliente **pagó directamente en oficina** — la cuenta sale de tu ruta |
+| 🔔 Gris | Una **cuenta fue removida** de tu asignación — ya no es tuya |
+| 💳 Verde | Un cliente **pagó en oficina** (transferencia, depósito o en persona) — la cuenta se retira automáticamente de tu ruta |
 
 > 💡 Toca cualquier notificación para ir directo a la pantalla relacionada.
 
@@ -271,7 +271,7 @@ La pantalla principal para Elena o Erika al abrir la app.
 | **Aprobadas** | Propuestas aprobadas hoy y total cobrado |
 | **Rechazadas** | Propuestas rechazadas hoy |
 | **Corregidas** | Propuestas que corregiste y aprobaste |
-| **Cobradores con efectivo pendiente** | Cuántos cobradores tienen dinero acumulado por confirmar |
+| **Cobradores con efectivo pendiente** | Cuántos cobradores tienen dinero en efectivo acumulado que aún no ha sido confirmado en oficina. Toca "Confirmar →" para registrar la entrega |
 
 **Botones:**
 - **Revisar ahora →** (banner naranja) — va directo a las propuestas pendientes sin filtros adicionales
@@ -334,6 +334,20 @@ Al tocar una propuesta, verás el detalle completo para tomar una decisión.
 
 ---
 
+### Comprobante al cliente — Flujo en dos pasos
+
+El cliente recibe confirmación en dos momentos:
+
+**Paso 1 — Al momento del cobro (inmediato):**
+Desde la pantalla de éxito post-envío, el cobrador puede entregar un **ticket provisional** al cliente tocando el ícono de referencia/impresora. El ticket indica:
+> *"Su pago fue recibido. Referencia #XXXX. Pendiente de autorización. Este comprobante es válido como constancia de entrega."*
+El cobrador puede imprimirlo vía Bluetooth o enviarlo por WhatsApp en ese momento.
+
+**Paso 2 — Cuando Elena aprueba:**
+El cliente recibe automáticamente el **comprobante oficial** por WhatsApp con todos los detalles: folio del recibo digital, monto aplicado, método de pago y fecha del próximo pago.
+
+---
+
 ### 15. Confirmar Efectivo en Oficina
 
 Se usa cuando un cobrador llega a la oficina a entregar el dinero en efectivo.
@@ -368,6 +382,9 @@ No. Debes pasar primero a la oficina a entregar el efectivo acumulado. Una vez c
 
 **¿Se puede deshacer una aprobación?**
 No directamente. Si se aprobó algo por error, contacta a la gerencia para que lo gestione manualmente.
+
+**¿Qué significa "Pago programado" en el detalle de propuesta?**
+Es el pago tal como aparece en el plan de pagos de la póliza del cliente — el monto, número de pago y fecha límite que el sistema tiene registrados según el contrato. Al revisar una propuesta, Elena ve dos secciones: lo que registró el cobrador vs. el pago programado en la póliza. Compararlas permite detectar errores o discrepancias fácilmente.
 
 ---
 
