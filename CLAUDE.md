@@ -152,6 +152,21 @@ Documentacion del sistema actual en `docs/`:
 - INFORME_ANALISIS_MYSQL.md — Problemas del schema actual
 - INFORME_OPTIMIZACION.md — 45 hallazgos y propuestas
 
+## Decisiones Canonicas v2 (2026-02-20) — Sesión Estratégica Mobile-First
+
+| # | Tema | Decision Final | Justificacion |
+|---|------|---------------|---------------|
+| DC-11 | Orden de desarrollo | **Mobile-first, no web-first.** Fase 1 real: backend pagos + app cobradores | Impacto inmediato en operación de cobranza |
+| DC-12 | Rol del legacy | El sistema legacy (PyQt5) se convierte en **cliente de la nueva API**. Consume endpoints `/api/v1/legacy/*` para enviar pagos temporales y recibir confirmaciones de sync | Migración gradual sin big bang. Legacy sigue funcionando |
+| DC-13 | Base de datos | **Nueva BD desde cero** con PostgreSQL. ETL con script para migrar solo pólizas vigentes + clientes + pagos activos. NO migración 1:1 de MySQL | La BD actual tiene problemas de schema que no vale corregir en MySQL |
+| DC-14 | Cotizaciones | Sistema de cotizaciones permanece **separado y consumido vía API**. No integrar código ni mover tablas al nuevo CRM. Solo limpiar las tablas de pólizas/clientes que se agregaron por error | Dos sistemas corriendo: evitar mezcla de código |
+| DC-15 | Metodología de trabajo | Adopción **parcial de BMAD**: lotes de ~5 pasos, commits descriptivos como "dev junior". Sin sub-agentes por rol por ahora (contexto ya está consolidado) | Más estructura sin complejidad innecesaria |
+| DC-16 | DB de oficina | Mover MySQL de la PC física de Tonalá al VPS. Conectar PCs de oficina via **WireGuard VPN** para que sigan accediendo como si estuvieran en red local | Centralizar la BD en el VPS es prerequisito para el nuevo sistema |
+| DC-17 | PRD por fases | Sesión Q&A de negocio **solo cuando estés a 2-3 semanas de arrancar esa fase**. No documentar siniestros hoy si lo tocamos en 4 meses | Las reglas de negocio cambian. Documentación prematura = trabajo desperdiciado |
+| DC-18 | Primera fase real | **Pagos + App Cobradores** (beta, sin conectar legacy). Endpoints de propuestas, sync, autorizacion. App RN básica: login, lista pólizas asignadas, registrar cobro, notif push | Módulo más documentado, impacto inmediato |
+
+---
+
 ## Decisiones Canonicas v1 (2026-02-15)
 
 > **FUENTE DE VERDAD.** Todos los demas documentos (01-07) DEBEN alinearse con esta seccion.
