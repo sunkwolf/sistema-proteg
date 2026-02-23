@@ -72,7 +72,7 @@ export default function DashboardCobrador() {
         </View>
 
         {/* ── Tarjeta de Efectivo (diseño V2 — aprobado) ── */}
-        <View style={styles.cashSection}>
+        <Pressable style={styles.cashSection} onPress={() => router.push('/(cobrador)/efectivo')}>
           <LinearGradient
             colors={['#4A3AFF', '#6C5CE7']}
             start={{ x: 0, y: 0 }}
@@ -108,7 +108,7 @@ export default function DashboardCobrador() {
               Tope: {formatMoney(d.cash_limit || '5000.00')}
             </Text>
           </LinearGradient>
-        </View>
+        </Pressable>
 
         {/* ── Resumen del Día ── */}
         <View style={styles.padded}>
