@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+
 import { Card } from '@/components/ui';
 import { colors, spacing, typography } from '@/theme';
 import { formatMoney, formatDateShort } from '@/utils/format';
@@ -32,7 +32,6 @@ export default function EfectivoPendiente() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Efectivo Pendiente', headerBackTitle: 'Atrás' }} />
       <SafeAreaView edges={[]} style={styles.container}>
         <ScrollView contentContainerStyle={styles.scroll}>
           {/* Total */}

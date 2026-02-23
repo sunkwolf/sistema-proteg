@@ -8,7 +8,8 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Card, Button } from '@/components/ui';
 import { colors, spacing, typography } from '@/theme';
 import { formatMoney, formatDateShort } from '@/utils/format';
@@ -66,8 +67,7 @@ export default function FolioDetailScreen() {
   };
 
   return (
-    <>
-      <Stack.Screen options={{ title: `Folio ${folio}`, headerBackTitle: 'Atrás' }} />
+
       <SafeAreaView edges={[]} style={styles.container}>
         <ScrollView contentContainerStyle={styles.scroll}>
           {/* Cliente */}
@@ -169,7 +169,7 @@ export default function FolioDetailScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
-    </>
+
   );
 }
 

@@ -8,7 +8,8 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { Card, Button } from '@/components/ui';
@@ -75,8 +76,7 @@ export default function AvisoVisita() {
   };
 
   return (
-    <>
-      <Stack.Screen options={{ title: 'Aviso de Visita', headerBackTitle: 'Atrás' }} />
+
       <SafeAreaView edges={[]} style={styles.container}>
         <ScrollView contentContainerStyle={styles.scroll}>
           {/* Datos pre-llenados */}
@@ -135,7 +135,7 @@ export default function AvisoVisita() {
           />
         </ScrollView>
       </SafeAreaView>
-    </>
+
   );
 }
 

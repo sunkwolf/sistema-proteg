@@ -8,7 +8,8 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { Card, Button, Input } from '@/components/ui';
@@ -92,8 +93,7 @@ export default function AbonoParcial() {
   };
 
   return (
-    <>
-      <Stack.Screen options={{ title: 'Abono Parcial', headerBackTitle: 'Atrás' }} />
+
       <SafeAreaView edges={[]} style={styles.container}>
         <ScrollView contentContainerStyle={styles.scroll}>
           <Text style={styles.folioLabel}>F: {folio} · Pago #3</Text>
@@ -173,7 +173,7 @@ export default function AbonoParcial() {
           />
         </ScrollView>
       </SafeAreaView>
-    </>
+
   );
 }
 

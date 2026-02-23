@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,96 +6,141 @@ import {
   ScrollView,
   RefreshControl,
   Pressable,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/auth';
-import { Card } from '@/components/ui';
-import { colors, spacing, typography } from '@/theme';
+import { Card, SectionHeader } from '@/components/ui';
+import { colors, spacing, radius } from '@/theme';
 import { formatMoney, formatDateFull } from '@/utils/format';
+
+const CARD_W = (Dimensions.get('window').width - 40 - 12) / 2;
 
 export default function DashboardGerente() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const router = useRouter();
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = React.useState(false);
 
-  // TODO: datos reales
-  const pendingApprovals = 5;
-  const summary = {
-    approved: 28,
-    approvedAmount: '33600.00',
-    rejected: 3,
-    corrected: 2,
-  };
+  // TODO: useGerenteDashboard()
+  const pending = 5;
+  const stats = { approved: 28, amount: '33600.00', rejected: 3, corrected: 2 };
   const collectorsWithCash = 2;
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 800);
-  }, []);
-
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top']} style={styles.screen}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Pressable><Text style={styles.hamburger}>☰</Text></Pressable>
+        <Text style={styles.headerTitle}>Proteg · Cobranza</Text>
+        <Pressable>
+          <Text style={styles.bellIcon}>🔔</Text>
+          <View style={styles.notifBadge}><Text style={styles.notifText}>{pending}</Text></View>
+        </Pressable>
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {
+          setRefreshing(true); setTimeout(() => setRefreshing(false), 800);
+        }} />}
       >
+        {/* Greeting */}
         <Text style={styles.greeting}>Hola, {user?.name?.split(' ')[0] || 'Elena'} 👋</Text>
         <Text style={styles.date}>{formatDateFull(new Date().toISOString())}</Text>
 
-        {/* Banner pendientes */}
-        {pendingApprovals > 0 && (
-          <Card
+        {/* Alert Banner */}
+        {pending > 0 && (
+          <Pressable
+            style={styles.alertCard}
             onPress={() => router.push('/(gerente)/propuestas')}
-            style={styles.urgentCard}
           >
-            <Text style={styles.urgentText}>
-              ⏳ {pendingApprovals} PENDIENTES
+            <View style={styles.alertIcon}><Text style={{ fontSize: 24 }}>⏳</Text></View>
+            <Text style={styles.alertTitle}>
+              {pending} PENDIENTES{'\n'}
+              <Text style={styles.alertSub}>de autorización</Text>
             </Text>
-            <Text style={styles.urgentSub}>de autorización</Text>
-            <Text style={styles.urgentLink}>Revisar ahora →</Text>
-          </Card>
+            <Text style={styles.alertDesc}>Solicitudes recientes requieren tu revisión</Text>
+            <View style={styles.alertBtn}>
+              <Text style={styles.alertBtnText}>Revisar ahora  →</Text>
+            </View>
+          </Pressable>
         )}
 
-        {/* Resumen */}
-        <Text style={styles.sectionLabel}>RESUMEN DEL DÍA</Text>
+        {/* Stats */}
+        <SectionHeader title="Resumen del Día" />
         <View style={styles.statsGrid}>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{summary.approved}</Text>
-            <Text style={styles.statLabel}>Aprobados</Text>
+          <View style={[styles.statCard, { backgroundColor: '#FFF9E6' }]}>
+            <View style={styles.statTop}>
+              <Text style={styles.statLabel}>Aprobadas</Text>
+              <View style={[styles.statIcon, { backgroundColor: '#D1FAE5' }]}>
+                <Text>✅</Text>
+              </View>
+            </View>
+            <Text style={styles.statValue}>{stats.approved}</Text>
           </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{formatMoney(summary.approvedAmount)}</Text>
-            <Text style={styles.statLabel}>Cobrado</Text>
+          <View style={[styles.statCard, { backgroundColor: '#FFF9E6' }]}>
+            <View style={styles.statTop}>
+              <Text style={styles.statLabel}>Cobrado</Text>
+              <View style={[styles.statIcon, { backgroundColor: colors.primaryBg }]}>
+                <Text>💰</Text>
+              </View>
+            </View>
+            <Text style={[styles.statValue, { fontSize: 28 }]}>{formatMoney(stats.amount)}</Text>
           </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{summary.rejected}</Text>
-            <Text style={styles.statLabel}>Rechazados</Text>
+          <View style={[styles.statCard, { backgroundColor: '#FFF0F0' }]}>
+            <View style={styles.statTop}>
+              <Text style={styles.statLabel}>Rechazadas</Text>
+              <View style={[styles.statIcon, { backgroundColor: '#FEE2E2' }]}>
+                <Text>❌</Text>
+              </View>
+            </View>
+            <Text style={styles.statValue}>{stats.rejected}</Text>
           </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{summary.corrected}</Text>
-            <Text style={styles.statLabel}>Corregidos</Text>
+          <View style={[styles.statCard, { backgroundColor: '#FFF5EB' }]}>
+            <View style={styles.statTop}>
+              <Text style={styles.statLabel}>Corregidas</Text>
+              <View style={[styles.statIcon, { backgroundColor: '#FFEDD5' }]}>
+                <Text>🔧</Text>
+              </View>
+            </View>
+            <Text style={styles.statValue}>{stats.corrected}</Text>
           </View>
         </View>
 
-        {/* Confirmar efectivo */}
-        <Card onPress={() => router.push('/(gerente)/efectivo')}>
-          <Text style={styles.sectionLabel}>CONFIRMAR EFECTIVO</Text>
-          <Text style={styles.detail}>
-            {collectorsWithCash} cobradores en oficina hoy
-          </Text>
-          <Text style={styles.link}>Confirmar →</Text>
-        </Card>
+        {/* Cobradores con efectivo */}
+        <Pressable
+          style={styles.cobradorBanner}
+          onPress={() => router.push('/(gerente)/efectivo')}
+        >
+          <View style={styles.cobradorIcon}><Text style={{ fontSize: 22 }}>💵</Text></View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.cobradorTitle}>Cobradores con efectivo pendiente</Text>
+            <Text style={styles.cobradorSub}>
+              Hay {collectorsWithCash} cobradores esperando confirmación
+            </Text>
+          </View>
+          <Text style={styles.confirmLink}>Confirmar →</Text>
+        </Pressable>
 
-        {/* Acciones rápidas */}
-        <Text style={styles.sectionLabel}>ACCIONES RÁPIDAS</Text>
-        <Pressable style={styles.quickAction} onPress={() => router.push('/(gerente)/propuestas')}>
-          <Text style={styles.quickActionText}>📋  Propuestas</Text>
-        </Pressable>
-        <Pressable style={styles.quickAction} onPress={() => router.push('/(gerente)/efectivo')}>
-          <Text style={styles.quickActionText}>💵  Confirmar Efectivo</Text>
-        </Pressable>
+        {/* Quick Actions */}
+        <View style={styles.actionsRow}>
+          <Pressable
+            style={styles.actionBtn}
+            onPress={() => router.push('/(gerente)/propuestas')}
+          >
+            <Text style={{ fontSize: 28, marginBottom: 8 }}>📋</Text>
+            <Text style={styles.actionLabel}>Propuestas</Text>
+          </Pressable>
+          <Pressable
+            style={styles.actionBtn}
+            onPress={() => router.push('/(gerente)/efectivo')}
+          >
+            <Text style={{ fontSize: 28, marginBottom: 8 }}>💵</Text>
+            <Text style={styles.actionLabel}>Confirmar{'\n'}Efectivo</Text>
+          </Pressable>
+        </View>
 
         <Pressable onPress={logout} style={styles.logoutBtn}>
           <Text style={styles.logoutText}>Cerrar sesión</Text>
@@ -106,46 +151,71 @@ export default function DashboardGerente() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  scroll: { padding: spacing.lg, paddingBottom: 40 },
-  greeting: { ...typography.h2, color: colors.gray900 },
-  date: { ...typography.body, color: colors.gray500, marginBottom: spacing.xl },
-
-  urgentCard: { backgroundColor: '#FEF3C7', borderLeftWidth: 4, borderLeftColor: colors.warning },
-  urgentText: { ...typography.h3, color: colors.warning },
-  urgentSub: { ...typography.body, color: colors.gray600 },
-  urgentLink: { ...typography.bodyBold, color: colors.primary, marginTop: spacing.sm },
-
-  sectionLabel: {
-    ...typography.captionBold,
-    color: colors.gray500,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: spacing['2xl'],
-    marginBottom: spacing.md,
+  screen: { flex: 1, backgroundColor: colors.background },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 14, backgroundColor: colors.white,
+    borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  statBox: {
-    width: '47%',
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: spacing.lg,
-    alignItems: 'center',
+  hamburger: { fontSize: 22, color: colors.textDark },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textDark },
+  bellIcon: { fontSize: 22 },
+  notifBadge: {
+    position: 'absolute', top: -4, right: -6, width: 18, height: 18, borderRadius: 9,
+    backgroundColor: colors.error, justifyContent: 'center', alignItems: 'center',
   },
-  statValue: { ...typography.moneySmall, color: colors.gray900 },
-  statLabel: { ...typography.caption, color: colors.gray500, marginTop: 2 },
+  notifText: { fontSize: 10, fontWeight: '700', color: colors.white },
+  scroll: { paddingBottom: 100 },
+  greeting: { fontSize: 32, fontWeight: '700', color: colors.textDark, paddingHorizontal: 20, paddingTop: 24 },
+  date: { fontSize: 16, color: colors.textLight, paddingHorizontal: 20, marginTop: 4 },
 
-  detail: { ...typography.body, color: colors.gray700 },
-  link: { ...typography.bodyBold, color: colors.primary, marginTop: spacing.sm },
-
-  quickAction: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: spacing.lg,
-    marginBottom: spacing.sm,
+  // Alert
+  alertCard: {
+    marginHorizontal: 20, marginTop: 20, backgroundColor: '#FFF3DC',
+    borderRadius: 16, padding: 24,
   },
-  quickActionText: { ...typography.bodyBold, color: colors.primary },
+  alertIcon: {
+    width: 48, height: 48, borderRadius: 24, backgroundColor: '#F5A623',
+    justifyContent: 'center', alignItems: 'center', marginBottom: 12,
+  },
+  alertTitle: { fontSize: 18, fontWeight: '700', color: colors.textDark, marginBottom: 8 },
+  alertSub: { fontWeight: '700' },
+  alertDesc: { fontSize: 14, color: '#6B7280', marginBottom: 20 },
+  alertBtn: {
+    alignSelf: 'flex-start', backgroundColor: '#E8922A', borderRadius: 12,
+    paddingVertical: 14, paddingHorizontal: 24,
+  },
+  alertBtnText: { fontSize: 16, fontWeight: '700', color: colors.white },
 
-  logoutBtn: { alignItems: 'center', marginTop: spacing['3xl'], padding: spacing.md },
-  logoutText: { ...typography.body, color: colors.gray400 },
+  // Stats
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 20 },
+  statCard: { width: CARD_W, borderRadius: 16, padding: 20, minHeight: 120 },
+  statTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  statLabel: { fontSize: 15, fontWeight: '500', color: '#6B7280' },
+  statIcon: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  statValue: { fontSize: 36, fontWeight: '700', color: colors.textDark },
+
+  // Cobrador banner
+  cobradorBanner: {
+    marginHorizontal: 20, marginTop: 24, backgroundColor: '#F9F8FD',
+    borderRadius: 16, padding: 20, flexDirection: 'row', alignItems: 'center',
+  },
+  cobradorIcon: {
+    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primaryBg,
+    justifyContent: 'center', alignItems: 'center', marginRight: 12,
+  },
+  cobradorTitle: { fontSize: 16, fontWeight: '700', color: colors.textDark },
+  cobradorSub: { fontSize: 13, color: colors.textLight, marginTop: 2 },
+  confirmLink: { fontSize: 15, fontWeight: '600', color: colors.primary },
+
+  // Actions
+  actionsRow: { flexDirection: 'row', paddingHorizontal: 20, marginTop: 24, gap: 12 },
+  actionBtn: {
+    flex: 1, backgroundColor: colors.primary, borderRadius: 16,
+    paddingVertical: 24, alignItems: 'center',
+  },
+  actionLabel: { fontSize: 14, fontWeight: '600', color: colors.white, textAlign: 'center' },
+
+  logoutBtn: { alignItems: 'center', marginTop: 32, padding: 16 },
+  logoutText: { fontSize: 15, color: colors.textLight },
 });
