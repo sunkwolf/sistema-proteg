@@ -4,247 +4,362 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Alert,
   Pressable,
+  Alert,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Card, Button, Input, SectionHeader } from '@/components/ui';
-import { colors, spacing, radius } from '@/theme';
+import { ScreenHeader } from '@/components/ui';
+import { colors } from '@/theme';
 import { formatMoney } from '@/utils/format';
 
-const MOCK_COLLECTORS = [
-  {
-    id: 1, name: 'Edgar Ramírez',
-    items: [
-      { folio: '18405', amount: '1200.00' },
-      { folio: '18502', amount: '850.00' },
-      { folio: '18310', amount: '1200.00' },
-    ],
-    expectedTotal: '3250.00',
-  },
-];
+interface FolioEntry {
+  folio: string;
+  amount: string;
+}
 
-export default function ConfirmarEfectivo() {
+const MOCK = {
+  cobrador: { name: 'Edgar Ramírez', id: 'COB-1', zone: 'Ruta Norte', initials: 'ER' },
+  folios: [
+    { folio: '18405', amount: '1200.00' },
+    { folio: '18502', amount: '850.00' },
+    { folio: '18310', amount: '1200.00' },
+  ] as FolioEntry[],
+};
+
+export default function ConfirmarEfectivoScreen() {
   const router = useRouter();
-  const [collector] = useState(MOCK_COLLECTORS[0]);
-  const [receivedAmount, setReceivedAmount] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ expected: string; received: string; diff: number } | null>(null);
+  const [receivedAmount, setReceivedAmount] = useState('3050.00');
+  const [confirmed, setConfirmed] = useState(false);
 
-  const receivedNum = parseFloat(receivedAmount) || 0;
-  const expectedNum = parseFloat(collector.expectedTotal);
-  const liveDiff = receivedAmount ? receivedNum - expectedNum : null;
+  const expectedTotal = MOCK.folios.reduce((s, f) => s + parseFloat(f.amount), 0);
+  const received = parseFloat(receivedAmount) || 0;
+  const diff = received - expectedTotal;
+  const hasDebt = diff < 0;
 
   const handleConfirm = () => {
-    if (!receivedAmount) {
-      Alert.alert('Requerido', 'Ingresa el monto físico recibido');
-      return;
+    if (hasDebt) {
+      Alert.alert(
+        'Deuda detectada',
+        `Hay una diferencia de ${formatMoney(String(Math.abs(diff)))}. Se registrará como deuda del cobrador.`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Confirmar', onPress: () => setConfirmed(true) },
+        ]
+      );
+    } else {
+      setConfirmed(true);
     }
-    setLoading(true);
-    setTimeout(() => {
-      setResult({ expected: collector.expectedTotal, received: receivedAmount, diff: receivedNum - expectedNum });
-      setLoading(false);
-    }, 500);
   };
 
-  // ── Pantalla de resultado ──
-  if (result) {
-    const hasDebt = result.diff < 0;
+  if (confirmed) {
     return (
-      <SafeAreaView edges={['top']} style={styles.screen}>
-        <View style={styles.header}>
-          <Pressable onPress={() => { setResult(null); router.back(); }}>
-            <Text style={styles.backArrow}>←</Text>
-          </Pressable>
-          <Text style={styles.headerTitle}>Efectivo Confirmado</Text>
-          <View style={{ width: 22 }} />
-        </View>
-        <ScrollView contentContainerStyle={[styles.scroll, { alignItems: 'center', paddingTop: 40 }]}>
-          <Text style={{ fontSize: 56, marginBottom: 16 }}>✅</Text>
-          <Text style={styles.resultTitle}>Efectivo confirmado</Text>
-          <Text style={styles.resultName}>{collector.name}</Text>
+      <SafeAreaView edges={['top']} style={styles.safe}>
+        <ScreenHeader title="Efectivo Confirmado" />
+        <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scroll, { alignItems: 'center', paddingTop: 60 }]}>
+          <View style={styles.successIcon}>
+            <Text style={{ fontSize: 40 }}>✅</Text>
+          </View>
+          <Text style={styles.successTitle}>Efectivo confirmado</Text>
+          <Text style={styles.successSub}>{MOCK.cobrador.name}</Text>
 
-          <Text style={styles.resultRow}>{formatMoney(result.received)} recibidos</Text>
-          <Text style={styles.resultRow}>{formatMoney(result.expected)} esperados</Text>
+          <Text style={styles.successDetail}>{formatMoney(receivedAmount)} recibidos</Text>
+          <Text style={styles.successDetail}>{formatMoney(String(expectedTotal))} esperados</Text>
 
           {hasDebt && (
-            <Card style={styles.debtCard}>
-              <Text style={styles.debtTitle}>Deuda registrada:</Text>
-              <Text style={styles.debtAmount}>{formatMoney(Math.abs(result.diff).toFixed(2))} · {collector.name}</Text>
+            <>
+              <Text style={styles.debtLabel}>Deuda registrada:</Text>
+              <Text style={styles.debtAmount}>{formatMoney(String(Math.abs(diff)))} · {MOCK.cobrador.name}</Text>
               <Text style={styles.debtNote}>(se descuenta de sus comisiones)</Text>
-              <View style={styles.debtDivider} />
-              <Text style={styles.debtNote}>
-                El pago del CLIENTE se aplica por {formatMoney(result.expected)} (monto completo)
-              </Text>
-            </Card>
+            </>
           )}
 
-          {/* Botón imprimir (de V2) */}
-          <Pressable style={styles.printBtn}>
-            <Text style={styles.printIcon}>🖨️</Text>
+          <View style={styles.successDivider} />
+          <Text style={styles.clientNote}>
+            El pago del CLIENTE se aplica por {formatMoney(String(expectedTotal))} (monto completo)
+          </Text>
+
+          <Pressable style={styles.printRow}>
+            <Text style={{ fontSize: 18, marginRight: 10 }}>🖨️</Text>
             <Text style={styles.printText}>Imprimir recibo de confirmación</Text>
           </Pressable>
 
-          <Button
-            title="Listo"
-            onPress={() => { setResult(null); router.back(); }}
-            size="lg"
-            style={{ width: '100%', marginTop: 24 }}
-          />
+          <Pressable style={styles.btnDone} onPress={() => router.back()}>
+            <Text style={styles.btnDoneText}>Listo</Text>
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
     );
   }
 
-  // ── Pantalla principal ──
   return (
-    <SafeAreaView edges={['top']} style={styles.screen}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.backArrow}>←</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>Confirmar Efectivo</Text>
-        <View style={{ width: 22 }} />
-      </View>
+    <SafeAreaView edges={['top']} style={styles.safe}>
+      <ScreenHeader title="Confirmar Efectivo" rightIcon="❓" />
 
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Cobrador seleccionado */}
-        <Text style={styles.fieldLabel}>COBRADOR SELECCIONADO</Text>
-        <Card>
-          <View style={styles.collectorRow}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scroll}>
+        {/* Cobrador card */}
+        <View style={styles.card}>
+          <Text style={styles.sectionLabel}>COBRADOR SELECCIONADO</Text>
+          <View style={styles.cobradorRow}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>ER</Text>
+              <Text style={styles.avatarText}>{MOCK.cobrador.initials}</Text>
             </View>
-            <View>
-              <Text style={styles.collectorName}>{collector.name}</Text>
-              <Text style={styles.collectorSub}>ID: COB-{collector.id} · Ruta Centro</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cobradorName}>{MOCK.cobrador.name}</Text>
+              <Text style={styles.cobradorMeta}>ID: {MOCK.cobrador.id} · {MOCK.cobrador.zone}</Text>
+            </View>
+            <Text style={{ fontSize: 18, color: '#CCC' }}>✓</Text>
+          </View>
+        </View>
+
+        {/* Desglose de folios */}
+        <View style={styles.card}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.sectionLabel}>DESGLOSE DE FOLIOS</Text>
+            <View style={styles.countBadge}>
+              <Text style={styles.countBadgeText}>{MOCK.folios.length} folios</Text>
             </View>
           </View>
-        </Card>
 
-        {/* Desglose */}
-        <Text style={styles.fieldLabel}>DESGLOSE DE FOLIOS</Text>
-        <Card>
-          {collector.items.map((item, i) => (
-            <View key={item.folio}>
-              {i > 0 && <View style={styles.itemDivider} />}
-              <View style={styles.itemRow}>
+          {MOCK.folios.map((f, i) => (
+            <View key={i} style={[styles.folioRow, i > 0 && styles.folioBorder]}>
+              <View style={styles.folioLeft}>
+                <Text style={{ fontSize: 14, marginRight: 8 }}>📋</Text>
                 <View>
-                  <Text style={styles.itemFolioLabel}>Folio</Text>
-                  <Text style={styles.itemFolio}>F:{item.folio}</Text>
+                  <Text style={styles.folioLabel}>Folio</Text>
+                  <Text style={styles.folioNum}>F:{f.folio}</Text>
                 </View>
-                <Text style={styles.itemAmount}>{formatMoney(item.amount)}</Text>
               </View>
+              <Text style={styles.folioAmount}>{formatMoney(f.amount)}</Text>
             </View>
           ))}
+
           <View style={styles.totalDivider} />
-          <View style={styles.itemRow}>
+          <View style={styles.rowBetween}>
             <Text style={styles.totalLabel}>Total esperado:</Text>
-            <Text style={styles.totalAmount}>{formatMoney(collector.expectedTotal)}</Text>
+            <Text style={styles.totalAmount}>{formatMoney(String(expectedTotal))}</Text>
           </View>
-        </Card>
+        </View>
 
-        {/* Monto recibido */}
-        <Input
-          label="MONTO RECIBIDO EN FÍSICO"
-          prefix="$"
-          placeholder="0.00"
-          value={receivedAmount}
-          onChangeText={setReceivedAmount}
-          keyboardType="decimal-pad"
-        />
+        {/* Monto físico recibido */}
+        <Text style={styles.fieldLabel}>MONTO FÍSICO RECIBIDO</Text>
+        <View style={styles.amountInput}>
+          <Text style={styles.currencyPrefix}>$</Text>
+          <TextInput
+            style={styles.amountField}
+            value={receivedAmount}
+            onChangeText={setReceivedAmount}
+            keyboardType="decimal-pad"
+          />
+          <Text style={{ fontSize: 16, color: '#CCC' }}>✏️</Text>
+        </View>
 
-        {/* Desglose en vivo (V2 — diferencia visible) */}
-        {liveDiff !== null && (
-          <Card style={{ backgroundColor: liveDiff < 0 ? colors.dangerLight : colors.successBg }}>
+        {/* Breakdown */}
+        {receivedAmount && (
+          <View style={[styles.card, hasDebt && { borderWidth: 1, borderColor: '#FF3B30' }]}>
             <View style={styles.breakdownRow}>
               <Text style={styles.breakdownLabel}>Esperado</Text>
-              <Text style={styles.breakdownValue}>{formatMoney(collector.expectedTotal)}</Text>
+              <Text style={styles.breakdownValue}>{formatMoney(String(expectedTotal))}</Text>
             </View>
             <View style={styles.breakdownRow}>
               <Text style={styles.breakdownLabel}>Recibido</Text>
               <Text style={styles.breakdownValue}>{formatMoney(receivedAmount)}</Text>
             </View>
-            <View style={[styles.breakdownRow, { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: liveDiff < 0 ? colors.dangerLight : colors.successLight }]}>
+            <View style={[styles.breakdownRow, styles.diffRow]}>
               <Text style={[styles.breakdownLabel, { fontWeight: '700' }]}>DIFERENCIA</Text>
-              <Text style={[styles.breakdownDiff, { color: liveDiff < 0 ? colors.error : colors.success }]}>
-                {liveDiff >= 0 ? '+' : ''}{formatMoney(liveDiff.toFixed(2))}
+              <Text style={[styles.breakdownValue, { color: hasDebt ? '#FF3B30' : '#22C55E', fontWeight: '800' }]}>
+                {formatMoney(String(diff))}
               </Text>
             </View>
-            {liveDiff < 0 && (
-              <View style={styles.debtWarning}>
-                <Text style={styles.debtWarningText}>⚠️ DEUDA DEL COBRADOR</Text>
+
+            {hasDebt && (
+              <View style={styles.warningBanner}>
+                <Text style={{ fontSize: 14, marginRight: 8 }}>⚠️</Text>
+                <Text style={styles.warningText}>Hay una diferencia</Text>
+                <View style={styles.debtBadge}>
+                  <Text style={styles.debtBadgeText}>DEUDA DETECTADA</Text>
+                </View>
               </View>
             )}
-          </Card>
+          </View>
         )}
 
-        <Button
-          title="CONFIRMAR RECEPCIÓN  ✓"
-          onPress={handleConfirm}
-          loading={loading}
-          size="lg"
-          style={{ marginTop: 20 }}
-        />
+        <View style={{ height: 100 }} />
       </ScrollView>
+
+      <View style={styles.bottomBar}>
+        <Pressable style={styles.btnConfirm} onPress={handleConfirm}>
+          <Text style={styles.btnConfirmText}>CONFIRMAR RECEPCIÓN</Text>
+          <Text style={{ color: colors.white, fontSize: 16, marginLeft: 8 }}>✓</Text>
+        </Pressable>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 14, backgroundColor: colors.primary,
+  safe: { flex: 1, backgroundColor: colors.primary },
+  scrollView: { flex: 1, backgroundColor: colors.background },
+  scroll: { padding: 16 },
+
+  card: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  backArrow: { fontSize: 22, color: colors.white },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.white },
-  scroll: { padding: 20, paddingBottom: 100 },
-  fieldLabel: { fontSize: 12, fontWeight: '700', color: colors.gray500, letterSpacing: 1, marginBottom: 8, marginTop: 16 },
 
-  // Collector
-  collectorRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.primaryBg, justifyContent: 'center', alignItems: 'center' },
-  avatarText: { fontSize: 16, fontWeight: '700', color: colors.primary },
-  collectorName: { fontSize: 16, fontWeight: '700', color: colors.textDark },
-  collectorSub: { fontSize: 13, color: colors.textLight, marginTop: 2 },
+  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#8E8E93', letterSpacing: 1, marginBottom: 12 },
 
-  // Items
-  itemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 },
-  itemDivider: { height: 1, backgroundColor: colors.divider },
-  itemFolioLabel: { fontSize: 11, color: colors.textLight },
-  itemFolio: { fontSize: 15, fontWeight: '600', color: colors.textDark },
-  itemAmount: { fontSize: 16, fontWeight: '700', color: colors.textDark },
-  totalDivider: { height: 2, backgroundColor: colors.textDark, marginVertical: 8 },
-  totalLabel: { fontSize: 15, fontWeight: '700', color: colors.textDark },
-  totalAmount: { fontSize: 20, fontWeight: '800', color: colors.success },
-
-  // Breakdown (V2)
-  breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  breakdownLabel: { fontSize: 14, color: colors.gray500 },
-  breakdownValue: { fontSize: 14, fontWeight: '600', color: colors.textDark },
-  breakdownDiff: { fontSize: 20, fontWeight: '800' },
-  debtWarning: {
-    marginTop: 12, backgroundColor: colors.error, borderRadius: 8,
-    paddingVertical: 10, paddingHorizontal: 16, alignItems: 'center',
+  // Cobrador
+  cobradorRow: { flexDirection: 'row', alignItems: 'center' },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
-  debtWarningText: { fontSize: 13, fontWeight: '700', color: colors.white, letterSpacing: 0.5 },
+  avatarText: { fontSize: 16, fontWeight: '700', color: colors.white },
+  cobradorName: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
+  cobradorMeta: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
 
-  // Result screen
-  resultTitle: { fontSize: 24, fontWeight: '700', color: colors.textDark, marginBottom: 4 },
-  resultName: { fontSize: 18, fontWeight: '500', color: colors.gray500, marginBottom: 24 },
-  resultRow: { fontSize: 16, color: colors.gray500, marginBottom: 4 },
-  debtCard: { backgroundColor: colors.dangerLight, marginTop: 24, width: '100%' },
-  debtTitle: { fontSize: 16, fontWeight: '700', color: colors.error },
-  debtAmount: { fontSize: 20, fontWeight: '800', color: colors.error, marginTop: 4 },
-  debtNote: { fontSize: 13, color: colors.gray500, marginTop: 4 },
-  debtDivider: { height: 1, backgroundColor: colors.dangerLight, marginVertical: 12 },
-  printBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    marginTop: 24, padding: 16, borderRadius: 12,
-    backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, width: '100%',
+  // Folios
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  countBadge: {
+    backgroundColor: '#E8E7FB',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
-  printIcon: { fontSize: 20 },
+  countBadgeText: { fontSize: 12, fontWeight: '600', color: colors.primary },
+
+  folioRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  folioBorder: { borderTopWidth: 1, borderTopColor: '#F0F0F5' },
+  folioLeft: { flexDirection: 'row', alignItems: 'center' },
+  folioLabel: { fontSize: 11, color: '#8E8E93' },
+  folioNum: { fontSize: 15, fontWeight: '700', color: '#1A1A1A' },
+  folioAmount: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
+
+  totalDivider: { height: 2, backgroundColor: '#E5E5EA', marginVertical: 12 },
+  totalLabel: { fontSize: 14, fontWeight: '600', color: '#555' },
+  totalAmount: { fontSize: 20, fontWeight: '800', color: '#22C55E' },
+
+  // Amount input
+  fieldLabel: { fontSize: 11, fontWeight: '700', color: '#8E8E93', letterSpacing: 1, marginBottom: 8, marginTop: 4 },
+  amountInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    paddingHorizontal: 16,
+    height: 56,
+    marginBottom: 16,
+  },
+  currencyPrefix: { fontSize: 18, fontWeight: '600', color: '#1A1A1A', marginRight: 4 },
+  amountField: { flex: 1, fontSize: 18, color: '#1A1A1A' },
+
+  // Breakdown
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  breakdownLabel: { fontSize: 14, color: '#666' },
+  breakdownValue: { fontSize: 14, fontWeight: '600', color: '#1A1A1A' },
+  diffRow: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F5',
+    marginBottom: 0,
+  },
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+  },
+  warningText: { fontSize: 14, fontWeight: '600', color: '#92600A', flex: 1 },
+  debtBadge: {
+    backgroundColor: '#FEE2E0',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  debtBadgeText: { fontSize: 10, fontWeight: '700', color: '#FF3B30', letterSpacing: 0.5 },
+
+  // Bottom
+  bottomBar: {
+    backgroundColor: colors.background,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 24,
+  },
+  btnConfirm: {
+    flexDirection: 'row',
+    backgroundColor: colors.primary,
+    borderRadius: 14,
+    paddingVertical: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  btnConfirmText: { fontSize: 16, fontWeight: '700', color: colors.white, letterSpacing: 0.5 },
+
+  // Success screen
+  successIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  successTitle: { fontSize: 24, fontWeight: '800', color: '#1A1A1A', marginBottom: 4 },
+  successSub: { fontSize: 16, color: '#8E8E93', marginBottom: 24 },
+  successDetail: { fontSize: 15, color: '#666', marginBottom: 4 },
+  debtLabel: { fontSize: 14, color: '#FF3B30', fontWeight: '600', marginTop: 16, marginBottom: 4 },
+  debtAmount: { fontSize: 20, fontWeight: '700', color: '#FF3B30' },
+  debtNote: { fontSize: 13, color: '#8E8E93', marginTop: 4 },
+  successDivider: { height: 1, backgroundColor: '#E5E5EA', width: '100%', marginVertical: 20 },
+  clientNote: { fontSize: 14, color: '#555', textAlign: 'center', marginBottom: 24 },
+  printRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 12,
+    paddingVertical: 14,
+    width: '100%',
+    marginBottom: 16,
+  },
   printText: { fontSize: 15, fontWeight: '600', color: colors.primary },
+  btnDone: {
+    backgroundColor: colors.primary,
+    borderRadius: 14,
+    paddingVertical: 16,
+    width: '100%',
+    alignItems: 'center',
+  },
+  btnDoneText: { fontSize: 16, fontWeight: '700', color: colors.white },
 });

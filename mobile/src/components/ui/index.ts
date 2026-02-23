@@ -5,3 +5,4 @@ export { Badge } from './Badge';
 export { SectionHeader } from './SectionHeader';
 export { StatCard } from './StatCard';
 export { QuickAction } from './QuickAction';
+export { ScreenHeader } from './ScreenHeader';
