@@ -17,6 +17,7 @@ import { useAuthStore } from '@/store/auth';
 import * as authApi from '@/api/auth';
 import { loginSchema, LoginForm } from '@/schemas/collections';
 import { Input, Button } from '@/components/ui';
+import { Image } from 'react-native';
 import { colors, spacing } from '@/theme';
 
 export default function LoginScreen() {
@@ -75,9 +76,11 @@ export default function LoginScreen() {
         >
           {/* Logo */}
           <View style={styles.logoArea}>
-            <View style={styles.logoCircle}>
-              <Text style={styles.logoIcon}>🛡️</Text>
-            </View>
+            <Image
+              source={require('@/../../assets/logo-protegrt.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
             <Text style={styles.logoTitle}>Proteg-rt</Text>
             <Text style={styles.logoSubtitle}>Mutualidad de Seguros</Text>
           </View>
@@ -170,16 +173,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
   },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  logoImage: {
+    width: 100,
+    height: 100,
     marginBottom: 16,
   },
-  logoIcon: { fontSize: 36 },
   logoTitle: {
     fontSize: 32,
     fontWeight: '800',
