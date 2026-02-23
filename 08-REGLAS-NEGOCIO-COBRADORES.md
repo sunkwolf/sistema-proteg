@@ -124,6 +124,25 @@ Estimado/a [NOMBRE CLIENTE]:
 - ❌ NO incluir saldo total pendiente (solo uso interno)
 - El cliente NO recibe comprobante si el folio es incorrecto → mecanismo natural de detección de errores
 
+### Dos notificaciones al cliente por cada pago (definido 23 feb 2026)
+El cliente recibe **dos mensajes** en momentos diferentes:
+
+1. **Al momento del cobro** → "Pago recibido — pendiente de aprobación"
+   - Se envía cuando el cobrador registra la propuesta
+   - Datos: folio, monto, método, fecha
+   - Formato: WhatsApp digital O impresión Bluetooth (a elección del cliente)
+
+2. **Al aprobar el pago** → "Pago aprobado / aplicado"
+   - Se envía cuando la gerente aprueba (o automáticamente si no hay problemas)
+   - Datos: historial de pagos, pago aplicado, próxima fecha pendiente, status de póliza
+   - Similar al comprobante actual de Legacy pero mejorado visualmente
+   - Detalles del contenido: **por definir**
+
+### Aviso "no activa servicios" (decisión 23 feb 2026)
+- El aviso de que un abono parcial NO activa servicios de grúa/siniestros **NO se muestra en la pantalla del cobrador**
+- Se incluye en: el ticket impreso y la notificación que recibe el cliente
+- Razón: no saturar la pantalla del cobrador con info que es relevante para el cliente, no para él
+
 ---
 
 ## 5. AVISO DE VISITA
