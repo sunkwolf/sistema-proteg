@@ -1,7 +1,24 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import { AUTH } from '@/config';
 import { User, UserRole } from '@/types';
+
+// Web fallback: SecureStore no funciona en web, usar localStorage
+const storage = {
+  getItem: async (key: string): Promise<string | null> => {
+    if (Platform.OS === 'web') return localStorage.getItem(key);
+    return SecureStore.getItemAsync(key);
+  },
+  setItem: async (key: string, value: string): Promise<void> => {
+    if (Platform.OS === 'web') { localStorage.setItem(key, value); return; }
+    await SecureStore.setItemAsync(key, value);
+  },
+  deleteItem: async (key: string): Promise<void> => {
+    if (Platform.OS === 'web') { localStorage.removeItem(key); return; }
+    await SecureStore.deleteItemAsync(key);
+  },
+};
 
 interface AuthState {
   user: User | null;
@@ -23,23 +40,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
 
   setAuth: async (user, token, refreshToken) => {
-    await SecureStore.setItemAsync(AUTH.TOKEN_KEY, token);
-    await SecureStore.setItemAsync(AUTH.REFRESH_KEY, refreshToken);
-    await SecureStore.setItemAsync(AUTH.USER_KEY, JSON.stringify(user));
+    await storage.setItem(AUTH.TOKEN_KEY, token);
+    await storage.setItem(AUTH.REFRESH_KEY, refreshToken);
+    await storage.setItem(AUTH.USER_KEY, JSON.stringify(user));
     set({ user, token, isLoading: false, isAuthenticated: true });
   },
 
   logout: async () => {
-    await SecureStore.deleteItemAsync(AUTH.TOKEN_KEY);
-    await SecureStore.deleteItemAsync(AUTH.REFRESH_KEY);
-    await SecureStore.deleteItemAsync(AUTH.USER_KEY);
+    await storage.deleteItem(AUTH.TOKEN_KEY);
+    await storage.deleteItem(AUTH.REFRESH_KEY);
+    await storage.deleteItem(AUTH.USER_KEY);
     set({ user: null, token: null, isLoading: false, isAuthenticated: false });
   },
 
   restore: async () => {
     try {
-      const token = await SecureStore.getItemAsync(AUTH.TOKEN_KEY);
-      const userJson = await SecureStore.getItemAsync(AUTH.USER_KEY);
+      const token = await storage.getItem(AUTH.TOKEN_KEY);
+      const userJson = await storage.getItem(AUTH.USER_KEY);
       if (token && userJson) {
         const user = JSON.parse(userJson) as User;
         set({ user, token, isLoading: false, isAuthenticated: true });

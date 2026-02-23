@@ -28,6 +28,14 @@ export default function LoginScreen() {
     defaultValues: { username: '', password: '' },
   });
 
+  const mockLogin = async (role: 'cobrador' | 'gerente_cobranza') => {
+    const mockUsers = {
+      cobrador: { id: 1, name: 'Edgar Martinez', username: 'edgar.m', role: 'cobrador' as const, zone: 'Zona Norte', avatar_url: null },
+      gerente_cobranza: { id: 2, name: 'Gabriela Lopez', username: 'gaby.l', role: 'gerente_cobranza' as const, zone: null, avatar_url: null },
+    };
+    await setAuth(mockUsers[role], 'mock-token-123', 'mock-refresh-456');
+  };
+
   const onSubmit = async (data: LoginForm) => {
     setLoading(true);
     try {
@@ -116,9 +124,22 @@ export default function LoginScreen() {
             <Pressable style={styles.biometricBtn}>
               <Text style={styles.biometricText}>🔑 Usar biometría</Text>
             </Pressable>
+
+            {/* Mock login buttons for development */}
+            <View style={styles.mockDivider}>
+              <View style={styles.mockLine} />
+              <Text style={styles.mockDividerText}>DEMO</Text>
+              <View style={styles.mockLine} />
+            </View>
+            <Pressable style={styles.mockBtn} onPress={() => mockLogin('cobrador')}>
+              <Text style={styles.mockBtnText}>📋 Entrar como Cobrador</Text>
+            </Pressable>
+            <Pressable style={[styles.mockBtn, styles.mockBtnGerente]} onPress={() => mockLogin('gerente_cobranza')}>
+              <Text style={styles.mockBtnText}>👔 Entrar como Gerente</Text>
+            </Pressable>
           </View>
 
-          <Text style={styles.version}>v0.1.0</Text>
+          <Text style={styles.version}>v0.1.0-dev</Text>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </LinearGradient>
@@ -195,5 +216,41 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.4)',
     fontSize: 12,
     marginTop: 24,
+  },
+  mockDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  mockLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E0E0EA',
+  },
+  mockDividerText: {
+    marginHorizontal: 12,
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#B0B0C0',
+    letterSpacing: 1,
+  },
+  mockBtn: {
+    backgroundColor: '#F0EEFF',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#D8D4FF',
+  },
+  mockBtnGerente: {
+    backgroundColor: '#FFF0E6',
+    borderColor: '#FFD4B0',
+  },
+  mockBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
   },
 });

@@ -14,10 +14,10 @@ import { useAuthStore } from '@/store/auth';
 import { SectionHeader, StatCard, QuickAction, Card } from '@/components/ui';
 import { colors, spacing, typography } from '@/theme';
 import { formatMoney, formatDateFull } from '@/utils/format';
-import { DashboardCobrador } from '@/types';
+import { DashboardCobrador as DashboardCobradorData } from '@/types';
 
 // TODO: reemplazar con useDashboard() de TanStack Query
-const MOCK: DashboardCobrador = {
+const MOCK: DashboardCobradorData = {
   collector_name: 'Edgar',
   date: new Date().toISOString(),
   cash_pending: '3250.00',
