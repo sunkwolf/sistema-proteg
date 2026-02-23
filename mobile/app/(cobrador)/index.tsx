@@ -6,6 +6,7 @@ import {
   ScrollView,
   RefreshControl,
   Pressable,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -34,6 +35,7 @@ const MOCK: DashboardCobradorData = {
 
 export default function DashboardCobrador() {
   const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
   const router = useRouter();
   const [refreshing, setRefreshing] = React.useState(false);
   const d = MOCK;
@@ -47,7 +49,15 @@ export default function DashboardCobrador() {
     <SafeAreaView edges={['top']} style={styles.screen}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable>
+        <Pressable onPress={() => {
+          Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Salir', style: 'destructive', onPress: async () => {
+              await logout();
+              router.replace('/(auth)/login');
+            }},
+          ]);
+        }}>
           <Text style={styles.hamburger}>☰</Text>
         </Pressable>
         <Text style={styles.headerTitle}>Proteg-rt</Text>
