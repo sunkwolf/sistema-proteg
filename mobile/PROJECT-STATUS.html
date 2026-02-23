@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proteg-rt Mobile App — Estado del Proyecto</title>
+<style>
+  :root { --primary: #4A3AFF; --success: #22C55E; --warning: #F59E0B; --danger: #EF4444; --bg: #F8F8FC; --card: #FFF; --text: #1A1A2E; --muted: #6B7280; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 24px; max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 28px; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); margin-bottom: 32px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #E5E5EA; }
+  .card h3 { font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .stat { font-size: 36px; font-weight: 800; }
+  .stat.green { color: var(--success); }
+  .stat.blue { color: var(--primary); }
+  .stat.orange { color: var(--warning); }
+  .progress { height: 8px; background: #E5E5EA; border-radius: 4px; margin: 12px 0 8px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--success); border-radius: 4px; }
+  .section { margin-bottom: 32px; }
+  .section h2 { font-size: 20px; font-weight: 700; margin-bottom: 16px; padding-left: 12px; border-left: 4px solid var(--primary); }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  th { background: var(--primary); color: white; text-align: left; padding: 12px 16px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 12px 16px; border-bottom: 1px solid #F0F0F5; font-size: 14px; }
+  tr:last-child td { border-bottom: none; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+  .badge-done { background: #DEF7E4; color: #1B7A34; }
+  .badge-progress { background: #E8E7FB; color: var(--primary); }
+  .badge-pending { background: #FEF3C7; color: #92600A; }
+  .badge-blocked { background: #FEE2E0; color: #C0281E; }
+  .tree { font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6; background: #1E1E2E; color: #CDD6F4; padding: 20px; border-radius: 12px; overflow-x: auto; }
+  .tree .folder { color: #89B4FA; }
+  .tree .file { color: #A6E3A1; }
+  .tree .comment { color: #6C7086; }
+  .stack-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .stack-item { background: #E8E7FB; color: var(--primary); padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; }
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: #E5E5EA; }
+  .timeline-item { position: relative; margin-bottom: 16px; }
+  .timeline-item::before { content: ''; position: absolute; left: -20px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--primary); }
+  .timeline-item.done::before { background: var(--success); }
+  .timeline-time { font-size: 12px; color: var(--muted); }
+  .timeline-text { font-size: 14px; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<h1>🛡️ Proteg-rt Mobile App</h1>
+<p class="subtitle">Sistema de Cobranza — Estado del Proyecto · 23 Feb 2026</p>
+
+<!-- Stats -->
+<div class="grid">
+  <div class="card">
+    <h3>Pantallas Codificadas</h3>
+    <div class="stat green">15 / 15</div>
+    <div class="progress"><div class="progress-fill" style="width:100%"></div></div>
+    <small style="color:var(--muted)">Cobrador: 11 · Gerente: 4</small>
+  </div>
+  <div class="card">
+    <h3>Componentes UI</h3>
+    <div class="stat blue">10</div>
+    <small style="color:var(--muted)">Card, Button, Badge, Input, StatCard, QuickAction, ScreenHeader, Icon, SectionHeader, KeyboardScreen</small>
+  </div>
+  <div class="card">
+    <h3>Commits Hoy</h3>
+    <div class="stat orange">20+</div>
+    <small style="color:var(--muted)">Scaffold → Mockup fidelity → Íconos → Pulido</small>
+  </div>
+</div>
+
+<!-- Stack -->
+<div class="section">
+  <h2>Stack Tecnológico</h2>
+  <div class="card">
+    <div class="stack-list">
+      <span class="stack-item">React Native 0.81.5</span>
+      <span class="stack-item">Expo SDK 54</span>
+      <span class="stack-item">TypeScript 5.9</span>
+      <span class="stack-item">Expo Router 6</span>
+      <span class="stack-item">TanStack Query</span>
+      <span class="stack-item">Zustand</span>
+      <span class="stack-item">React Hook Form</span>
+      <span class="stack-item">Zod</span>
+      <span class="stack-item">@expo/vector-icons</span>
+      <span class="stack-item">expo-linear-gradient</span>
+    </div>
+  </div>
+</div>
+
+<!-- Screens -->
+<div class="section">
+  <h2>Pantallas — Cobrador</h2>
+  <table>
+    <tr><th>Pantalla</th><th>Archivo</th><th>Estado</th></tr>
+    <tr><td>Login</td><td>app/(auth)/login.tsx</td><td><span class="badge badge-done">✅ Completa</span></td></tr>
+    <tr><td>Dashboard</td><td>app/(cobrador)/index.tsx</td><td><span class="badge badge-done">✅ Completa</span></td></tr>
+    <tr><td>Lista Folios</td><td>app/(cobrador)/folios/index.tsx</td><td><span class="badge badge-done">✅ Completa</span></td></tr>
+    <tr><td>Detalle Folio</td><td>app/(cobrador)/folios/[folio].tsx</td><td><span class="badge badge-done">✅ Completa</span></td></tr>
+    <tr><td>Registrar Cobro</td><td>app/(cobrador)/cobros/nuevo.tsx</td><td><span class="badge badge-done">✅ Rediseñada</span></td></tr>
+    <tr><td>Abono Parcial</td><td>app/(cobrador)/cobros/abono.tsx</td><td><span class="badge badge-done">✅ Rediseñada</span></td></tr>
+    <tr><td>Propuesta Enviada</td><td>app/(cobrador)/cobros/exito.tsx</td><td><span class="badge badge-done">✅ Nueva</span></td></tr>
+    <tr><td>Aviso de Visita</td><td>app/(cobrador)/avisos/nuevo.tsx</td><td><span class="badge badge-done">✅ Rediseñada</span></td></tr>
+    <tr><td>Mis Propuestas</td><td>app/(cobrador)/propuestas.tsx</td><td><span class="badge badge-done">✅ Rediseñada</span></td></tr>
+    <tr><td>Efectivo Pendiente</td><td>app/(cobrador)/efectivo.tsx</td><td><span class="badge badge-done">✅ Rediseñada</span></td></tr>
+    <tr><td>Planificador Ruta</td><td>app/(cobrador)/ruta.tsx</td><td><span class="badge badge-done">✅ Rediseñada</span></td></tr>
+    <tr><td>Notificaciones</td><td>app/(cobrador)/notificaciones.tsx</td><td><span class="badge badge-done">✅ Nueva</span></td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <h2>Pantallas — Gerente</h2>
+  <table>
+    <tr><th>Pantalla</th><th>Archivo</th><th>Estado</th></tr>
+    <tr><td>Dashboard</td><td>app/(gerente)/index.tsx</td><td><span class="badge badge-done">✅ Completa</span></td></tr>
+    <tr><td>Lista Propuestas</td><td>app/(gerente)/propuestas/index.tsx</td><td><span class="badge badge-done">✅ Completa</span></td></tr>
+    <tr><td>Detalle Propuesta</td><td>app/(gerente)/propuestas/[id].tsx</td><td><span class="badge badge-done">✅ Rediseñada</span></td></tr>
+    <tr><td>Confirmar Efectivo</td><td>app/(gerente)/efectivo.tsx</td><td><span class="badge badge-done">✅ Rediseñada</span></td></tr>
+  </table>
+</div>
+
+<!-- Pending -->
+<div class="section">
+  <h2>Pendientes</h2>
+  <table>
+    <tr><th>Tarea</th><th>Prioridad</th><th>Estado</th></tr>
+    <tr><td>Reemplazar emojis internos por Icon component</td><td>Media</td><td><span class="badge badge-progress">En cola</span></td></tr>
+    <tr><td>Unificar spacing/fuentes entre pantallas</td><td>Media</td><td><span class="badge badge-progress">En cola</span></td></tr>
+    <tr><td>Desplegar backend en EasyPanel</td><td>Alta</td><td><span class="badge badge-blocked">Bloqueado (Fer)</span></td></tr>
+    <tr><td>Conectar mock data → API real</td><td>Alta</td><td><span class="badge badge-pending">Espera backend</span></td></tr>
+    <tr><td>react-native-maps para Ruta</td><td>Baja</td><td><span class="badge badge-pending">Futuro</span></td></tr>
+    <tr><td>Push notifications (expo-notifications)</td><td>Baja</td><td><span class="badge badge-pending">Futuro</span></td></tr>
+    <tr><td>Impresora Bluetooth</td><td>Baja</td><td><span class="badge badge-pending">V2</span></td></tr>
+  </table>
+</div>
+
+<!-- File tree -->
+<div class="section">
+  <h2>Estructura de Archivos</h2>
+  <div class="tree">
+<span class="folder">mobile/</span>
+├── <span class="folder">app/</span>
+│   ├── <span class="file">_layout.tsx</span>          <span class="comment"># Root: QueryProvider + AuthRestorer</span>
+│   ├── <span class="file">index.tsx</span>            <span class="comment"># Redirect por rol (cobrador/gerente)</span>
+│   ├── <span class="folder">(auth)/</span>
+│   │   └── <span class="file">login.tsx</span>        <span class="comment"># Login + demo buttons + logo</span>
+│   ├── <span class="folder">(cobrador)/</span>          <span class="comment"># 4 tabs: Inicio, Folios, Ruta, Propuestas</span>
+│   │   ├── <span class="file">_layout.tsx</span>      <span class="comment"># Tab navigator con @expo/vector-icons</span>
+│   │   ├── <span class="file">index.tsx</span>        <span class="comment"># Dashboard: greeting, cash card, stats 2x2</span>
+│   │   ├── <span class="folder">folios/</span>
+│   │   │   ├── <span class="file">index.tsx</span>    <span class="comment"># Lista folios: search, filtros, cards color</span>
+│   │   │   └── <span class="file">[folio].tsx</span>  <span class="comment"># Detalle: cliente, pago, vehículo, acciones</span>
+│   │   ├── <span class="folder">cobros/</span>
+│   │   │   ├── <span class="file">nuevo.tsx</span>    <span class="comment"># Registrar cobro completo</span>
+│   │   │   ├── <span class="file">abono.tsx</span>    <span class="comment"># Abono parcial + estado de cuenta</span>
+│   │   │   └── <span class="file">exito.tsx</span>    <span class="comment"># Success: propuesta enviada</span>
+│   │   ├── <span class="folder">avisos/</span>
+│   │   │   └── <span class="file">nuevo.tsx</span>    <span class="comment"># Aviso de visita + foto evidencia</span>
+│   │   ├── <span class="file">ruta.tsx</span>         <span class="comment"># Planificador ruta + mapa placeholder</span>
+│   │   ├── <span class="file">propuestas.tsx</span>   <span class="comment"># Mis propuestas + filtros + resumen</span>
+│   │   ├── <span class="file">efectivo.tsx</span>     <span class="comment"># Efectivo pendiente + historial</span>
+│   │   └── <span class="file">notificaciones.tsx</span> <span class="comment"># Notificaciones agrupadas</span>
+│   └── <span class="folder">(gerente)/</span>           <span class="comment"># 3 tabs: Inicio, Propuestas, Efectivo</span>
+│       ├── <span class="file">_layout.tsx</span>
+│       ├── <span class="file">index.tsx</span>        <span class="comment"># Dashboard: alert, stats, quick actions</span>
+│       ├── <span class="folder">propuestas/</span>
+│       │   ├── <span class="file">index.tsx</span>    <span class="comment"># Lista propuestas pendientes</span>
+│       │   └── <span class="file">[id].tsx</span>     <span class="comment"># Comparativa: registrado vs esperado</span>
+│       └── <span class="file">efectivo.tsx</span>     <span class="comment"># Confirmar efectivo + success</span>
+├── <span class="folder">src/</span>
+│   ├── <span class="folder">api/</span>               <span class="comment"># Axios client + auth/collections/authorization</span>
+│   ├── <span class="folder">components/ui/</span>     <span class="comment"># 10 componentes reutilizables</span>
+│   ├── <span class="folder">hooks/</span>             <span class="comment"># TanStack Query hooks</span>
+│   ├── <span class="folder">schemas/</span>           <span class="comment"># Zod validation schemas</span>
+│   ├── <span class="folder">store/</span>             <span class="comment"># Zustand auth store</span>
+│   ├── <span class="folder">theme/</span>             <span class="comment"># colors, spacing, typography</span>
+│   ├── <span class="folder">types/</span>             <span class="comment"># TypeScript interfaces</span>
+│   └── <span class="folder">utils/</span>             <span class="comment"># formatMoney, formatDate, etc.</span>
+└── <span class="folder">assets/</span>
+    └── <span class="file">logo-protegrt.png</span>  <span class="comment"># Logo oficial</span>
+  </div>
+</div>
+
+<!-- Timeline -->
+<div class="section">
+  <h2>Timeline — 23 Feb 2026</h2>
+  <div class="timeline">
+    <div class="timeline-item done"><div class="timeline-time">~22:00 MX (22 feb)</div><div class="timeline-text">Inicio sesión: scaffold 41 archivos + stack migration</div></div>
+    <div class="timeline-item done"><div class="timeline-time">~00:00 MX</div><div class="timeline-text">Theme Stitch + componentes UI + dashboard cobrador</div></div>
+    <div class="timeline-item done"><div class="timeline-time">~02:00 MX</div><div class="timeline-text">15 pantallas codificadas, 3 crashes resueltos (colors, exports, hardcoded)</div></div>
+    <div class="timeline-item done"><div class="timeline-time">~03:30 MX</div><div class="timeline-text">Rediseño 7 pantallas cobrador fieles a Stitch mockups</div></div>
+    <div class="timeline-item done"><div class="timeline-time">~04:30 MX</div><div class="timeline-text">Pantallas gerente rediseñadas + success screens</div></div>
+    <div class="timeline-item done"><div class="timeline-time">~05:30 MX</div><div class="timeline-text">Pruebas en cel, fixes de routing, stat cards, logout, packages SDK 54</div></div>
+    <div class="timeline-item done"><div class="timeline-time">~06:00 MX</div><div class="timeline-text">Íconos institucionales @expo/vector-icons, KeyboardScreen, docs</div></div>
+  </div>
+</div>
+
+<p style="text-align:center; color:var(--muted); margin-top:40px; font-size:13px;">
+  Hecho con 💜 por Claudy & Fer — Una noche épica de código
+</p>
+
+</body>
+</html>
