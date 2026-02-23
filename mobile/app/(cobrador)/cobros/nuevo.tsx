@@ -63,14 +63,15 @@ export default function NuevoCobro() {
         setGpsLocation('Tonalá, Jalisco');
       }
       // TODO: createProposal API call
-      Alert.alert(
-        '✅ Propuesta enviada',
-        `F: ${folio} · ${formatMoney(amount)} · ${method}\n\nRecibirás notificación cuando sea aprobada.`,
-        [
-          { text: 'Ver propuestas', onPress: () => router.push('/(cobrador)/propuestas') },
-          { text: 'Siguiente folio →', onPress: () => router.back() },
-        ]
-      );
+      router.replace({
+        pathname: '/(cobrador)/cobros/exito',
+        params: {
+          folio: folio || MOCK.folio,
+          amount: amount,
+          method: method,
+          payment: String(MOCK.payment_number),
+        },
+      });
     } catch (err: any) {
       Alert.alert('Error', err.message || 'No se pudo enviar');
     } finally {
