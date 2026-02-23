@@ -31,9 +31,29 @@ export const colors = {
 
   // ── Surfaces ─────────────────────────
   white: '#FFFFFF',
+  surface: '#F5F5FA',
   background: '#F8F8FC',
   border: '#F0F0F5',
   divider: '#F5F5FA',
+
+  // ── Gray scale (aliases para compatibilidad) ──
+  gray50: '#FAFAFA',
+  gray100: '#F5F5F5',
+  gray200: '#E5E5E5',
+  gray300: '#D4D4D4',
+  gray400: '#A3A3A3',
+  gray500: '#737373',
+  gray600: '#525252',
+  gray700: '#404040',
+  gray800: '#262626',
+  gray900: '#171717',
+
+  // ── Semantic aliases ─────────────────
+  danger: '#DC2626',
+  dangerLight: '#FEE2E2',
+  warning: '#D97706',
+  warningLight: '#FEF3C7',
+  successLight: '#D1FAE5',
 
   // ── Overlay ──────────────────────────
   overlay: 'rgba(0, 0, 0, 0.5)',

@@ -157,7 +157,7 @@ export default function ConfirmarEfectivo() {
 
         {/* Desglose en vivo (V2 — diferencia visible) */}
         {liveDiff !== null && (
-          <Card style={{ backgroundColor: liveDiff < 0 ? '#FFF0F0' : colors.successBg }}>
+          <Card style={{ backgroundColor: liveDiff < 0 ? colors.dangerLight : colors.successBg }}>
             <View style={styles.breakdownRow}>
               <Text style={styles.breakdownLabel}>Esperado</Text>
               <Text style={styles.breakdownValue}>{formatMoney(collector.expectedTotal)}</Text>
@@ -166,7 +166,7 @@ export default function ConfirmarEfectivo() {
               <Text style={styles.breakdownLabel}>Recibido</Text>
               <Text style={styles.breakdownValue}>{formatMoney(receivedAmount)}</Text>
             </View>
-            <View style={[styles.breakdownRow, { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: liveDiff < 0 ? '#FEE2E2' : '#BBF7D0' }]}>
+            <View style={[styles.breakdownRow, { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: liveDiff < 0 ? colors.dangerLight : colors.successLight }]}>
               <Text style={[styles.breakdownLabel, { fontWeight: '700' }]}>DIFERENCIA</Text>
               <Text style={[styles.breakdownDiff, { color: liveDiff < 0 ? colors.error : colors.success }]}>
                 {liveDiff >= 0 ? '+' : ''}{formatMoney(liveDiff.toFixed(2))}
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   backArrow: { fontSize: 22, color: colors.white },
   headerTitle: { fontSize: 18, fontWeight: '700', color: colors.white },
   scroll: { padding: 20, paddingBottom: 100 },
-  fieldLabel: { fontSize: 12, fontWeight: '700', color: '#6B7280', letterSpacing: 1, marginBottom: 8, marginTop: 16 },
+  fieldLabel: { fontSize: 12, fontWeight: '700', color: colors.gray500, letterSpacing: 1, marginBottom: 8, marginTop: 16 },
 
   // Collector
   collectorRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
 
   // Breakdown (V2)
   breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  breakdownLabel: { fontSize: 14, color: '#6B7280' },
+  breakdownLabel: { fontSize: 14, color: colors.gray500 },
   breakdownValue: { fontSize: 14, fontWeight: '600', color: colors.textDark },
   breakdownDiff: { fontSize: 20, fontWeight: '800' },
   debtWarning: {
@@ -233,13 +233,13 @@ const styles = StyleSheet.create({
 
   // Result screen
   resultTitle: { fontSize: 24, fontWeight: '700', color: colors.textDark, marginBottom: 4 },
-  resultName: { fontSize: 18, fontWeight: '500', color: '#6B7280', marginBottom: 24 },
-  resultRow: { fontSize: 16, color: '#6B7280', marginBottom: 4 },
-  debtCard: { backgroundColor: '#FFF0F0', marginTop: 24, width: '100%' },
+  resultName: { fontSize: 18, fontWeight: '500', color: colors.gray500, marginBottom: 24 },
+  resultRow: { fontSize: 16, color: colors.gray500, marginBottom: 4 },
+  debtCard: { backgroundColor: colors.dangerLight, marginTop: 24, width: '100%' },
   debtTitle: { fontSize: 16, fontWeight: '700', color: colors.error },
   debtAmount: { fontSize: 20, fontWeight: '800', color: colors.error, marginTop: 4 },
-  debtNote: { fontSize: 13, color: '#6B7280', marginTop: 4 },
-  debtDivider: { height: 1, backgroundColor: '#FEE2E2', marginVertical: 12 },
+  debtNote: { fontSize: 13, color: colors.gray500, marginTop: 4 },
+  debtDivider: { height: 1, backgroundColor: colors.dangerLight, marginVertical: 12 },
   printBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     marginTop: 24, padding: 16, borderRadius: 12,

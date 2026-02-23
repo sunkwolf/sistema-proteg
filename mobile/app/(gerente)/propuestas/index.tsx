@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   filterRow: {
     flexDirection: 'row', gap: 16, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4,
   },
-  filterLabel: { fontSize: 14, color: '#6B7280' },
+  filterLabel: { fontSize: 14, color: colors.gray500 },
   filterValue: { fontWeight: '600', color: colors.primary },
   countText: { fontSize: 13, color: colors.textMedium, paddingHorizontal: 20, marginBottom: 12 },
   list: { paddingHorizontal: 20, paddingBottom: 100 },
@@ -128,10 +128,10 @@ const styles = StyleSheet.create({
   timestamp: { fontSize: 13, color: colors.textLight },
   timestampOverdue: { fontSize: 13, fontWeight: '600', color: colors.error },
   clientName: { fontSize: 18, fontWeight: '700', color: colors.textDark, marginBottom: 4 },
-  detail: { fontSize: 14, color: '#6B7280', marginBottom: 8 },
+  detail: { fontSize: 14, color: colors.gray500, marginBottom: 8 },
   methodRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
   methodIcon: { fontSize: 16 },
-  methodText: { fontSize: 14, color: '#6B7280' },
+  methodText: { fontSize: 14, color: colors.gray500 },
   collectorRow: { flexDirection: 'row', alignItems: 'center', paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.divider },
   avatar: {
     width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primaryBg,
@@ -141,9 +141,9 @@ const styles = StyleSheet.create({
   collectorName: { fontSize: 14, fontWeight: '500', color: colors.textDark },
   reviewLink: { fontSize: 15, fontWeight: '600', color: colors.primary },
   warningBanner: {
-    backgroundColor: '#FFF3DC', borderRadius: 12, padding: 16, marginTop: 12,
+    backgroundColor: colors.warningLight, borderRadius: 12, padding: 16, marginTop: 12,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
-  warningText: { fontSize: 14, fontWeight: '600', color: '#E8922A' },
-  warningChevron: { fontSize: 20, color: '#E8922A' },
+  warningText: { fontSize: 14, fontWeight: '600', color: colors.warning },
+  warningChevron: { fontSize: 20, color: colors.warning },
 });

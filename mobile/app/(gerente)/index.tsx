@@ -71,16 +71,16 @@ export default function DashboardGerente() {
         {/* Stats */}
         <SectionHeader title="Resumen del Día" />
         <View style={styles.statsGrid}>
-          <View style={[styles.statCard, { backgroundColor: '#FFF9E6' }]}>
+          <View style={[styles.statCard, { backgroundColor: colors.warningLight }]}>
             <View style={styles.statTop}>
               <Text style={styles.statLabel}>Aprobadas</Text>
-              <View style={[styles.statIcon, { backgroundColor: '#D1FAE5' }]}>
+              <View style={[styles.statIcon, { backgroundColor: colors.successLight }]}>
                 <Text>✅</Text>
               </View>
             </View>
             <Text style={styles.statValue}>{stats.approved}</Text>
           </View>
-          <View style={[styles.statCard, { backgroundColor: '#FFF9E6' }]}>
+          <View style={[styles.statCard, { backgroundColor: colors.warningLight }]}>
             <View style={styles.statTop}>
               <Text style={styles.statLabel}>Cobrado</Text>
               <View style={[styles.statIcon, { backgroundColor: colors.primaryBg }]}>
@@ -89,19 +89,19 @@ export default function DashboardGerente() {
             </View>
             <Text style={[styles.statValue, { fontSize: 28 }]}>{formatMoney(stats.amount)}</Text>
           </View>
-          <View style={[styles.statCard, { backgroundColor: '#FFF0F0' }]}>
+          <View style={[styles.statCard, { backgroundColor: colors.dangerLight }]}>
             <View style={styles.statTop}>
               <Text style={styles.statLabel}>Rechazadas</Text>
-              <View style={[styles.statIcon, { backgroundColor: '#FEE2E2' }]}>
+              <View style={[styles.statIcon, { backgroundColor: colors.dangerLight }]}>
                 <Text>❌</Text>
               </View>
             </View>
             <Text style={styles.statValue}>{stats.rejected}</Text>
           </View>
-          <View style={[styles.statCard, { backgroundColor: '#FFF5EB' }]}>
+          <View style={[styles.statCard, { backgroundColor: colors.orangeBg }]}>
             <View style={styles.statTop}>
               <Text style={styles.statLabel}>Corregidas</Text>
-              <View style={[styles.statIcon, { backgroundColor: '#FFEDD5' }]}>
+              <View style={[styles.statIcon, { backgroundColor: colors.orangeBg }]}>
                 <Text>🔧</Text>
               </View>
             </View>
@@ -171,18 +171,18 @@ const styles = StyleSheet.create({
 
   // Alert
   alertCard: {
-    marginHorizontal: 20, marginTop: 20, backgroundColor: '#FFF3DC',
+    marginHorizontal: 20, marginTop: 20, backgroundColor: colors.warningLight,
     borderRadius: 16, padding: 24,
   },
   alertIcon: {
-    width: 48, height: 48, borderRadius: 24, backgroundColor: '#F5A623',
+    width: 48, height: 48, borderRadius: 24, backgroundColor: colors.orange,
     justifyContent: 'center', alignItems: 'center', marginBottom: 12,
   },
   alertTitle: { fontSize: 18, fontWeight: '700', color: colors.textDark, marginBottom: 8 },
   alertSub: { fontWeight: '700' },
-  alertDesc: { fontSize: 14, color: '#6B7280', marginBottom: 20 },
+  alertDesc: { fontSize: 14, color: colors.gray500, marginBottom: 20 },
   alertBtn: {
-    alignSelf: 'flex-start', backgroundColor: '#E8922A', borderRadius: 12,
+    alignSelf: 'flex-start', backgroundColor: colors.warning, borderRadius: 12,
     paddingVertical: 14, paddingHorizontal: 24,
   },
   alertBtnText: { fontSize: 16, fontWeight: '700', color: colors.white },
@@ -191,13 +191,13 @@ const styles = StyleSheet.create({
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 20 },
   statCard: { width: CARD_W, borderRadius: 16, padding: 20, minHeight: 120 },
   statTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  statLabel: { fontSize: 15, fontWeight: '500', color: '#6B7280' },
+  statLabel: { fontSize: 15, fontWeight: '500', color: colors.gray500 },
   statIcon: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   statValue: { fontSize: 36, fontWeight: '700', color: colors.textDark },
 
   // Cobrador banner
   cobradorBanner: {
-    marginHorizontal: 20, marginTop: 24, backgroundColor: '#F9F8FD',
+    marginHorizontal: 20, marginTop: 24, backgroundColor: colors.background,
     borderRadius: 16, padding: 20, flexDirection: 'row', alignItems: 'center',
   },
   cobradorIcon: {
