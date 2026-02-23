@@ -11,11 +11,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/auth';
-import { Card, SectionHeader } from '@/components/ui';
+import { Card, SectionHeader, QuickAction } from '@/components/ui';
 import { colors, spacing, radius } from '@/theme';
 import { formatMoney, formatDateFull } from '@/utils/format';
 
-const CARD_W = (Dimensions.get('window').width - 40 - 12) / 2;
+const CARD_W = (Dimensions.get('window').width - 40 - 12) / 2; // 40 = 20px padding each side
 
 export default function DashboardGerente() {
   const user = useAuthStore((s) => s.user);
@@ -87,7 +87,7 @@ export default function DashboardGerente() {
                 <Text>💰</Text>
               </View>
             </View>
-            <Text style={[styles.statValue, { fontSize: 28 }]}>{formatMoney(stats.amount)}</Text>
+            <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>{formatMoney(stats.amount)}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.dangerLight }]}>
             <View style={styles.statTop}>
@@ -124,22 +124,21 @@ export default function DashboardGerente() {
           <Text style={styles.confirmLink}>Confirmar →</Text>
         </Pressable>
 
-        {/* Quick Actions */}
-        <View style={styles.actionsRow}>
-          <Pressable
-            style={styles.actionBtn}
+        {/* Acciones Rápidas */}
+        <SectionHeader title="Acciones Rápidas" />
+        <View style={{ paddingHorizontal: 20 }}>
+          <QuickAction
+            icon="📋"
+            title="Propuestas Pendientes"
+            subtitle="Revisar solicitudes de cobro"
             onPress={() => router.push('/(gerente)/propuestas')}
-          >
-            <Text style={{ fontSize: 28, marginBottom: 8 }}>📋</Text>
-            <Text style={styles.actionLabel}>Propuestas</Text>
-          </Pressable>
-          <Pressable
-            style={styles.actionBtn}
+          />
+          <QuickAction
+            icon="💵"
+            title="Confirmar Efectivo"
+            subtitle="Recepción de efectivo de cobradores"
             onPress={() => router.push('/(gerente)/efectivo')}
-          >
-            <Text style={{ fontSize: 28, marginBottom: 8 }}>💵</Text>
-            <Text style={styles.actionLabel}>Confirmar{'\n'}Efectivo</Text>
-          </Pressable>
+          />
         </View>
 
         <Pressable onPress={logout} style={styles.logoutBtn}>
@@ -193,7 +192,7 @@ const styles = StyleSheet.create({
   statTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   statLabel: { fontSize: 15, fontWeight: '500', color: colors.gray500 },
   statIcon: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-  statValue: { fontSize: 36, fontWeight: '700', color: colors.textDark },
+  statValue: { fontSize: 22, fontWeight: '700', color: colors.textDark },
 
   // Cobrador banner
   cobradorBanner: {
@@ -207,14 +206,6 @@ const styles = StyleSheet.create({
   cobradorTitle: { fontSize: 16, fontWeight: '700', color: colors.textDark },
   cobradorSub: { fontSize: 13, color: colors.textLight, marginTop: 2 },
   confirmLink: { fontSize: 15, fontWeight: '600', color: colors.primary },
-
-  // Actions
-  actionsRow: { flexDirection: 'row', paddingHorizontal: 20, marginTop: 24, gap: 12 },
-  actionBtn: {
-    flex: 1, backgroundColor: colors.primary, borderRadius: 16,
-    paddingVertical: 24, alignItems: 'center',
-  },
-  actionLabel: { fontSize: 14, fontWeight: '600', color: colors.white, textAlign: 'center' },
 
   logoutBtn: { alignItems: 'center', marginTop: 32, padding: 16 },
   logoutText: { fontSize: 15, color: colors.textLight },
