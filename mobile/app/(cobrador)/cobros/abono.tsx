@@ -46,9 +46,15 @@ export default function AbonoParcialScreen() {
     if (!val || val <= 0) return Alert.alert('Error', 'Ingresa un monto válido');
     if (val > maxAmount) return Alert.alert('Error', `El monto máximo es ${formatMoney(MOCK.remaining)}`);
     if (!receipt.trim()) return Alert.alert('Error', 'Ingresa el número de recibo');
-    Alert.alert('✅ Abono registrado', `Se envió propuesta por ${formatMoney(amount)} al gerente.`, [
-      { text: 'OK', onPress: () => router.back() },
-    ]);
+    router.replace({
+      pathname: '/(cobrador)/cobros/exito',
+      params: {
+        folio: MOCK.folio,
+        amount: amount,
+        method: method,
+        payment: String(MOCK.payment_number),
+      },
+    });
   };
 
   return (
