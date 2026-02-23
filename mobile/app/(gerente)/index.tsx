@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   alertBtnText: { fontSize: 16, fontWeight: '700', color: colors.white },
 
   // Stats
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 20 },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingHorizontal: 20 },
   statCard: { width: CARD_W, borderRadius: 16, padding: 20, minHeight: 120 },
   statTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   statLabel: { fontSize: 15, fontWeight: '500', color: colors.gray500 },

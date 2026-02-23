@@ -1,13 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { colors, spacing, radius, cardShadow } from '@/theme';
-
-const CARD_WIDTH = (Dimensions.get('window').width - 32 - 12) / 2; // 32 = 16px padding each side, 12 = gap
+import { View, Text, StyleSheet } from 'react-native';
+import { colors, radius, cardShadow } from '@/theme';
 
 interface StatCardProps {
   icon: string;
   iconBg: string;
-  iconColor: string;
+  iconColor?: string;
   label: string;
   value: string;
 }
@@ -28,13 +26,14 @@ export function StatCard({ icon, iconBg, label, value }: StatCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    width: CARD_WIDTH,
+    width: '48%',
     backgroundColor: colors.white,
     borderRadius: radius.lg,
-    paddingHorizontal: 18,
-    paddingVertical: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    marginBottom: 12,
     ...cardShadow,
   },
   top: {
@@ -42,26 +41,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconBox: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: radius.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
   iconText: {
-    fontSize: 20,
+    fontSize: 18,
   },
   label: {
     fontSize: 13,
     fontWeight: '400',
     color: colors.textMedium,
-    marginLeft: 10,
+    marginLeft: 8,
     flex: 1,
   },
   value: {
     fontSize: 22,
     fontWeight: '800',
     color: colors.textDark,
-    marginTop: 12,
+    marginTop: 10,
   },
 });
