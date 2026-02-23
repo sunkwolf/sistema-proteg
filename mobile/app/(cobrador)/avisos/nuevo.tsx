@@ -4,194 +4,318 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Alert,
   Pressable,
+  Alert,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as Location from 'expo-location';
-import * as ImagePicker from 'expo-image-picker';
-import { Card, Button } from '@/components/ui';
-import { colors, spacing, typography, radius } from '@/theme';
-import { VisitReason } from '@/types';
+import { colors, spacing } from '@/theme';
+import { formatMoney, formatDateFull } from '@/utils/format';
 
-const REASONS: { key: VisitReason; label: string }[] = [
-  { key: 'no_estaba', label: 'Cliente no estaba' },
-  { key: 'sin_efectivo', label: 'No tenía efectivo' },
-  { key: 'pagara_despues', label: 'Pagará después' },
-  { key: 'otro', label: 'Otro (especificar)' },
+const MOCK = {
+  folio: '18405',
+  client: 'María López',
+  cobrador: 'Edgar Ramírez',
+  payment_number: 3,
+  amount: '1200.00',
+  status: 'Pendiente',
+};
+
+const REASONS = [
+  'Cliente no estaba',
+  'No tenía efectivo',
+  'Pagará después',
+  'Otro (especificar)',
 ];
 
-export default function AvisoVisita() {
+export default function AvisoVisitaScreen() {
   const { folio } = useLocalSearchParams<{ folio: string }>();
   const router = useRouter();
+  const [selectedReason, setSelectedReason] = useState<number | null>(0);
+  const [otherText, setOtherText] = useState('');
 
-  const [reason, setReason] = useState<VisitReason | null>(null);
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const now = new Date();
+  const dateStr = formatDateFull(now.toISOString());
+  const timeStr = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-  const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permisos', 'Se necesita acceso a la cámara para la evidencia');
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
-    if (!result.canceled && result.assets[0]) {
-      setPhotoUri(result.assets[0].uri);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!reason) {
-      Alert.alert('Requerido', 'Selecciona qué ocurrió');
-      return;
-    }
-    if (!photoUri) {
-      Alert.alert('Foto obligatoria', 'Toma una foto del aviso colocado en la puerta o entregado');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      let lat = 0, lng = 0;
-      if (status === 'granted') {
-        const loc = await Location.getCurrentPositionAsync({});
-        lat = loc.coords.latitude;
-        lng = loc.coords.longitude;
-      }
-
-      // TODO: upload photo + createVisitNotice
-
-      Alert.alert('✅ Aviso registrado', `F: ${folio} — Aviso guardado con éxito`, [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'No se pudo registrar el aviso');
-    } finally {
-      setLoading(false);
-    }
+  const handleSubmit = () => {
+    if (selectedReason === null) return Alert.alert('Error', 'Selecciona qué ocurrió');
+    Alert.alert('✅ Aviso registrado', 'El aviso de visita fue guardado exitosamente.', [
+      { text: 'OK', onPress: () => router.back() },
+    ]);
   };
 
   return (
+    <SafeAreaView edges={['top']} style={styles.safe}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} style={{ width: 40 }}>
+          <Text style={styles.backArrow}>←</Text>
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Aviso de Visita</Text>
+          <Text style={styles.headerSub}>F: {MOCK.folio} · {MOCK.client}</Text>
+        </View>
+      </View>
 
-      <SafeAreaView edges={[]} style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scroll}>
-          {/* Datos pre-llenados */}
-          <Card>
-            <Text style={styles.sectionTitle}>DATOS DEL AVISO</Text>
-            <Text style={styles.detail}>Folio: {folio}</Text>
-            <Text style={styles.detail}>
-              Fecha: {new Date().toLocaleDateString('es-MX', {
-                weekday: 'long', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-              })}
-            </Text>
-          </Card>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scroll}>
+        {/* Detalles de la visita card */}
+        <View style={styles.detailCard}>
+          <View style={styles.detailHeader}>
+            <Text style={styles.detailTitle}>DETALLES DE LA VISITA</Text>
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusText}>{MOCK.status}</Text>
+            </View>
+          </View>
 
-          {/* ¿Qué ocurrió? */}
-          <Text style={styles.fieldLabel}>¿QUÉ OCURRIÓ? *</Text>
-          {REASONS.map((r) => (
-            <Pressable
-              key={r.key}
-              onPress={() => setReason(r.key)}
-              style={[styles.reasonOption, reason === r.key && styles.reasonActive]}
-            >
-              <Text style={[styles.radioCircle, reason === r.key && styles.radioFilled]}>
-                {reason === r.key ? '●' : '○'}
-              </Text>
-              <Text style={[styles.reasonText, reason === r.key && styles.reasonTextActive]}>
-                {r.label}
-              </Text>
-            </Pressable>
-          ))}
+          {/* Grid 2x2 */}
+          <View style={styles.gridRow}>
+            <View style={styles.gridCol}>
+              <Text style={styles.gridLabel}>Cliente</Text>
+              <Text style={styles.gridValue}>{MOCK.client}</Text>
+            </View>
+            <View style={styles.gridCol}>
+              <Text style={styles.gridLabel}>Folio</Text>
+              <Text style={styles.gridValue}>{MOCK.folio}</Text>
+            </View>
+          </View>
 
-          {/* Foto de evidencia */}
-          <Text style={[styles.fieldLabel, { marginTop: spacing.xl }]}>
-            FOTO DE EVIDENCIA *
-          </Text>
-          <Text style={styles.photoHint}>
-            (Aviso colocado en puerta o entregado a alguien)
-          </Text>
-          <Pressable style={styles.photoBtn} onPress={takePhoto}>
-            <Text style={styles.photoBtnText}>
-              {photoUri ? '✓ Foto tomada — Tomar otra' : '📷 TOMAR FOTO'}
-            </Text>
-            <Text style={styles.photoSub}>(Obligatoria)</Text>
+          <View style={styles.gridDivider} />
+
+          <View style={styles.gridRow}>
+            <View style={styles.gridCol}>
+              <Text style={styles.gridLabel}>Pago Esperado</Text>
+              <Text style={styles.gridValue}>#{MOCK.payment_number} | {formatMoney(MOCK.amount)}</Text>
+            </View>
+            <View style={styles.gridCol}>
+              <Text style={styles.gridLabel}>Cobrador</Text>
+              <Text style={styles.gridValue}>{MOCK.cobrador}</Text>
+            </View>
+          </View>
+
+          <View style={styles.gridDivider} />
+
+          <View>
+            <Text style={styles.gridLabel}>Fecha y Hora</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+              <Text style={{ fontSize: 14, color: colors.primary, marginRight: 6 }}>🕐</Text>
+              <Text style={styles.dateTimeValue}>{dateStr} {timeStr}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ¿Qué ocurrió? */}
+        <Text style={styles.sectionTitle}>¿Qué ocurrió?</Text>
+
+        {REASONS.map((reason, i) => (
+          <Pressable
+            key={i}
+            style={[styles.radioCard, selectedReason === i && styles.radioCardActive]}
+            onPress={() => setSelectedReason(i)}
+          >
+            <View style={[styles.radioOuter, selectedReason === i && styles.radioOuterActive]}>
+              {selectedReason === i && <View style={styles.radioInner} />}
+            </View>
+            <Text style={styles.radioText}>{reason}</Text>
           </Pressable>
+        ))}
 
-          {/* TODO: botón imprimir por BT */}
-          <Pressable style={styles.printBtn}>
-            <Text style={styles.printText}>🖨️ Imprimir por BT (opcional)</Text>
-          </Pressable>
-
-          <Button
-            title="REGISTRAR AVISO  ✓"
-            onPress={handleSubmit}
-            loading={loading}
-            size="lg"
-            style={{ marginTop: spacing.xl }}
+        {selectedReason === 3 && (
+          <TextInput
+            style={styles.otherInput}
+            placeholder="Especifica el motivo..."
+            placeholderTextColor="#B0B0BE"
+            value={otherText}
+            onChangeText={setOtherText}
+            multiline
           />
-        </ScrollView>
-      </SafeAreaView>
+        )}
 
+        {/* Evidencia */}
+        <View style={styles.evidenceHeader}>
+          <Text style={styles.sectionTitle}>Evidencia</Text>
+          <Text style={styles.requiredText}>Obligatorio</Text>
+        </View>
+
+        <Pressable style={styles.photoArea}>
+          <View style={styles.cameraIcon}>
+            <Text style={{ fontSize: 24 }}>📸</Text>
+          </View>
+          <Text style={styles.photoText}>Foto del aviso colocado</Text>
+        </Pressable>
+
+        {/* Imprimir BT */}
+        <Pressable style={styles.printBtn}>
+          <Text style={{ fontSize: 18, marginRight: 8 }}>🖨️</Text>
+          <Text style={styles.printText}>Imprimir por BT</Text>
+        </Pressable>
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      {/* Bottom button */}
+      <View style={styles.bottomBar}>
+        <Pressable style={styles.submitBtn} onPress={handleSubmit}>
+          <Text style={styles.submitText}>REGISTRAR AVISO</Text>
+          <Text style={{ color: colors.white, fontSize: 16, marginLeft: 8 }}>✓</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  scroll: { padding: spacing.lg, paddingBottom: 40 },
-  sectionTitle: {
-    ...typography.captionBold,
-    color: colors.gray500,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: spacing.sm,
-  },
-  detail: { ...typography.body, color: colors.gray700, marginBottom: 2 },
-  fieldLabel: {
-    ...typography.captionBold,
-    color: colors.gray700,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.sm,
-    marginTop: spacing.lg,
-  },
-  reasonOption: {
+  safe: { flex: 1, backgroundColor: colors.primary },
+
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
-    marginBottom: spacing.xs,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.primary,
+  },
+  backArrow: { fontSize: 22, color: colors.white, fontWeight: '600' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.white },
+  headerSub: { fontSize: 14, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+
+  scrollView: { flex: 1, backgroundColor: colors.background },
+  scroll: { padding: 16 },
+
+  // Detail card
+  detailCard: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.gray200,
+    borderColor: '#E0E0E0',
+    padding: 20,
+    marginBottom: 24,
   },
-  reasonActive: {
-    borderColor: colors.primary,
-    backgroundColor: '#EEF2FF',
-  },
-  radioCircle: { fontSize: 18, color: colors.gray400, marginRight: spacing.md },
-  radioFilled: { color: colors.primary },
-  reasonText: { ...typography.body, color: colors.gray700 },
-  reasonTextActive: { color: colors.primary, fontWeight: '600' },
-  photoHint: { ...typography.caption, color: colors.gray400, marginBottom: spacing.sm },
-  photoBtn: {
-    backgroundColor: colors.gray100,
-    borderRadius: radius.md,
-    padding: spacing['2xl'],
+  detailHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 16,
+  },
+  detailTitle: { fontSize: 12, fontWeight: '700', color: '#333', letterSpacing: 1 },
+  statusBadge: {
+    backgroundColor: '#FFF3CD',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: { fontSize: 12, fontWeight: '600', color: '#856404' },
+
+  gridRow: { flexDirection: 'row', marginBottom: 4 },
+  gridCol: { flex: 1 },
+  gridLabel: { fontSize: 12, color: '#999' },
+  gridValue: { fontSize: 16, fontWeight: '700', color: '#1A1A1A', marginTop: 4 },
+  gridDivider: { height: 1, backgroundColor: '#EEE', marginVertical: 16 },
+
+  dateTimeValue: { fontSize: 14, fontWeight: '600', color: colors.primary },
+
+  // Qué ocurrió
+  sectionTitle: { fontSize: 20, fontWeight: '700', color: '#1A1A1A', marginBottom: 16 },
+
+  radioCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
     borderWidth: 1,
+    borderColor: '#E8E8E8',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  radioCardActive: { borderColor: colors.primary },
+  radioOuter: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#CCC',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  radioOuterActive: { borderColor: colors.primary },
+  radioInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.primary },
+  radioText: { fontSize: 15, color: '#333' },
+
+  otherInput: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 15,
+    color: '#1A1A1A',
+    minHeight: 80,
+    textAlignVertical: 'top',
+    marginBottom: 12,
+  },
+
+  // Evidencia
+  evidenceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  requiredText: { fontSize: 13, fontWeight: '600', color: '#E53935' },
+
+  photoArea: {
+    borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: colors.gray300,
-  },
-  photoBtnText: { ...typography.bodyBold, color: colors.primary },
-  photoSub: { ...typography.small, color: colors.gray400, marginTop: 4 },
-  printBtn: {
+    borderColor: '#B0B0E8',
+    borderRadius: 16,
+    backgroundColor: '#FAFAFF',
+    paddingVertical: 32,
     alignItems: 'center',
-    padding: spacing.lg,
-    marginTop: spacing.md,
+    marginBottom: 16,
   },
-  printText: { ...typography.body, color: colors.gray500 },
+  cameraIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    backgroundColor: 'rgba(74,58,232,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  photoText: { fontSize: 14, color: colors.primary, fontWeight: '500' },
+
+  printBtn: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+  },
+  printText: { fontSize: 16, fontWeight: '700', color: colors.primary },
+
+  bottomBar: {
+    backgroundColor: colors.background,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 24,
+  },
+  submitBtn: {
+    flexDirection: 'row',
+    backgroundColor: colors.primary,
+    borderRadius: 14,
+    paddingVertical: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  submitText: { fontSize: 16, fontWeight: '700', color: colors.white, letterSpacing: 1 },
 });

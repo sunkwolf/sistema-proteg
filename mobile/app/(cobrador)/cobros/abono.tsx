@@ -4,219 +4,364 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Alert,
   Pressable,
+  Alert,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as Location from 'expo-location';
-import * as ImagePicker from 'expo-image-picker';
-import { Card, Button, Input } from '@/components/ui';
-import { colors, spacing, typography, radius } from '@/theme';
+import { colors, spacing } from '@/theme';
 import { formatMoney } from '@/utils/format';
-import { PaymentMethod } from '@/types';
 
-const METHODS: { key: PaymentMethod; label: string }[] = [
-  { key: 'efectivo', label: 'EFECTIVO' },
-  { key: 'deposito', label: 'DEPÓSITO' },
-  { key: 'transferencia', label: 'TRANSFERENCIA' },
-];
+const MOCK = {
+  folio: '18405',
+  payment_number: 3,
+  total: '1200.00',
+  paid: '500.00',
+  remaining: '700.00',
+  abono_seq: 2,
+  status: 'Activo',
+};
 
-export default function AbonoParcial() {
+type PaymentMethod = 'efectivo' | 'deposito' | 'transferencia';
+
+export default function AbonoParcialScreen() {
   const { folio } = useLocalSearchParams<{ folio: string }>();
   const router = useRouter();
-
-  // TODO: datos reales del folio
-  const totalAmount = '1200.00';
-  const alreadyPaid = '500.00';
-  const remaining = '700.00';
-  const partialSeq = 2;
-
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState<PaymentMethod | null>(null);
-  const [receiptNumber, setReceiptNumber] = useState('');
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [method, setMethod] = useState<PaymentMethod>('efectivo');
+  const [receipt, setReceipt] = useState('');
 
-  const amountNum = parseFloat(amount) || 0;
-  const remainingNum = parseFloat(remaining);
-  const completesPayment = amountNum > 0 && amountNum >= remainingNum;
+  const maxAmount = parseFloat(MOCK.remaining);
+  const paidPct = (parseFloat(MOCK.paid) / parseFloat(MOCK.total)) * 100;
 
-  const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permisos', 'Se necesita acceso a la cámara');
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
-    if (!result.canceled && result.assets[0]) {
-      setPhotoUri(result.assets[0].uri);
-    }
-  };
+  const methods: { key: PaymentMethod; icon: string; label: string }[] = [
+    { key: 'efectivo', icon: '💵', label: 'EFECTIVO' },
+    { key: 'deposito', icon: '🏦', label: 'DEPÓSITO' },
+    { key: 'transferencia', icon: '📱', label: 'TRANSFER.' },
+  ];
 
-  const handleSubmit = async () => {
-    if (!amount || !method || !receiptNumber) {
-      Alert.alert('Campos requeridos', 'Completa monto, método de pago y número de recibo');
-      return;
-    }
-    if (amountNum > remainingNum) {
-      Alert.alert('Error', `El abono no puede ser mayor al pendiente (${formatMoney(remaining)})`);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      let lat = 0, lng = 0;
-      if (status === 'granted') {
-        const loc = await Location.getCurrentPositionAsync({});
-        lat = loc.coords.latitude;
-        lng = loc.coords.longitude;
-      }
-
-      // TODO: upload photo + createProposal (is_partial: true)
-
-      Alert.alert(
-        '✅ Abono enviado',
-        `F: ${folio} · Abono ${formatMoney(amount)} · ${method}`,
-        [
-          { text: 'Ver mis propuestas', onPress: () => router.push('/(cobrador)/propuestas') },
-          { text: 'Siguiente folio →', onPress: () => router.back() },
-        ]
-      );
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'No se pudo enviar el abono');
-    } finally {
-      setLoading(false);
-    }
+  const handleSubmit = () => {
+    const val = parseFloat(amount);
+    if (!val || val <= 0) return Alert.alert('Error', 'Ingresa un monto válido');
+    if (val > maxAmount) return Alert.alert('Error', `El monto máximo es ${formatMoney(MOCK.remaining)}`);
+    if (!receipt.trim()) return Alert.alert('Error', 'Ingresa el número de recibo');
+    Alert.alert('✅ Abono registrado', `Se envió propuesta por ${formatMoney(amount)} al gerente.`, [
+      { text: 'OK', onPress: () => router.back() },
+    ]);
   };
 
   return (
+    <SafeAreaView edges={['top']} style={styles.safe}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} style={{ width: 40 }}>
+          <Text style={styles.backArrow}>←</Text>
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Abono Parcial</Text>
+          <Text style={styles.headerSub}>F: {MOCK.folio} · Pago #{MOCK.payment_number}</Text>
+        </View>
+        <Pressable style={{ width: 40, alignItems: 'flex-end' }}>
+          <Text style={{ color: colors.white, fontSize: 20 }}>📋</Text>
+        </Pressable>
+      </View>
 
-      <SafeAreaView edges={[]} style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scroll}>
-          <Text style={styles.folioLabel}>F: {folio} · Pago #3</Text>
-
-          {/* Estado del pago */}
-          <Card>
-            <Text style={styles.sectionTitle}>ESTADO DEL PAGO #3</Text>
-            <Text style={styles.row}>Monto total: {formatMoney(totalAmount)}</Text>
-            <Text style={styles.row}>Abonado: {formatMoney(alreadyPaid)}</Text>
-            <Text style={[styles.row, styles.bold]}>Pendiente: {formatMoney(remaining)}</Text>
-            <Text style={styles.row}>Abono #: {partialSeq}</Text>
-          </Card>
-
-          {/* Monto del abono */}
-          <Input
-            label="MONTO DEL ABONO *"
-            placeholder="0.00"
-            value={amount}
-            onChangeText={setAmount}
-            keyboardType="decimal-pad"
-          />
-          <Text style={styles.maxHint}>Max: {formatMoney(remaining)} (pendiente)</Text>
-
-          {completesPayment && (
-            <Card style={{ backgroundColor: colors.successLight }}>
-              <Text style={{ color: colors.success, fontWeight: '600' }}>
-                🎉 ¡Este abono completa el pago! Activará la cobertura.
-              </Text>
-            </Card>
-          )}
-
-          {/* Método de pago */}
-          <Text style={styles.fieldLabel}>MÉTODO DE PAGO *</Text>
-          <View style={styles.methodRow}>
-            {METHODS.map((m) => (
-              <Pressable
-                key={m.key}
-                onPress={() => setMethod(m.key)}
-                style={[styles.methodChip, method === m.key && styles.methodChipActive]}
-              >
-                <Text style={[styles.methodText, method === m.key && styles.methodTextActive]}>
-                  {m.label}
-                </Text>
-              </Pressable>
-            ))}
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scroll}>
+        {/* Estado de Cuenta Card */}
+        <View style={styles.accountCard}>
+          <View style={styles.accountHeader}>
+            <Text style={styles.accountTitle}>Estado de Cuenta</Text>
+            <View style={styles.activeBadge}>
+              <View style={styles.activeDot} />
+              <Text style={styles.activeText}>{MOCK.status}</Text>
+            </View>
           </View>
 
-          {/* Recibo */}
-          <Input
-            label="NÚMERO DE RECIBO *"
-            placeholder="Recibo #"
-            value={receiptNumber}
-            onChangeText={setReceiptNumber}
-          />
+          <View style={styles.accountDivider} />
 
-          {/* Foto */}
-          <Text style={styles.fieldLabel}>FOTO RECIBO (Opcional)</Text>
-          <Pressable style={styles.photoBtn} onPress={takePhoto}>
-            <Text style={styles.photoBtnText}>
-              {photoUri ? '✓ Foto adjunta' : '📷 Tomar foto'}
-            </Text>
+          <View style={styles.amountsRow}>
+            <View>
+              <Text style={styles.amountLabel}>Monto total</Text>
+              <Text style={styles.amountValue}>{formatMoney(MOCK.total)}</Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={styles.amountLabel}>PENDIENTE</Text>
+              <Text style={[styles.amountValue, { color: colors.primary }]}>{formatMoney(MOCK.remaining)}</Text>
+            </View>
+          </View>
+
+          <View style={{ marginTop: 16 }}>
+            <Text style={styles.amountLabel}>Ya abonado</Text>
+            <View style={styles.paidRow}>
+              <Text style={styles.paidAmount}>{formatMoney(MOCK.paid)}</Text>
+              <View style={styles.seqBadge}>
+                <Text style={styles.seqBadgeText}>Abono #{MOCK.abono_seq} completado</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Progress bar */}
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${paidPct}%` }]} />
+          </View>
+        </View>
+
+        {/* Monto a abonar */}
+        <Text style={styles.fieldLabel}>Monto a abonar</Text>
+        <View style={styles.amountInput}>
+          <Text style={styles.currencyPrefix}>$</Text>
+          <TextInput
+            style={styles.amountInputField}
+            placeholder="0.00"
+            placeholderTextColor="#B0B0BE"
+            keyboardType="decimal-pad"
+            value={amount}
+            onChangeText={setAmount}
+          />
+          <Text style={styles.currencySuffix}>MXN</Text>
+        </View>
+        <View style={styles.amountHintRow}>
+          <Text style={styles.amountHint}>Ingrese monto parcial</Text>
+          <Text style={[styles.amountHint, { color: colors.primary, fontWeight: '600' }]}>Max: {formatMoney(MOCK.remaining)}</Text>
+        </View>
+
+        {/* Método de pago */}
+        <Text style={styles.fieldLabel}>Método de pago</Text>
+        <View style={styles.methodsRow}>
+          {methods.map(m => (
+            <Pressable
+              key={m.key}
+              style={[styles.methodCard, method === m.key && styles.methodCardActive]}
+              onPress={() => setMethod(m.key)}
+            >
+              <Text style={{ fontSize: 20 }}>{m.icon}</Text>
+              <Text style={[styles.methodText, method === m.key && { color: colors.primary }]}>{m.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Número de folio / recibo */}
+        <Text style={styles.fieldLabel}>Número de folio / recibo</Text>
+        <View style={styles.receiptRow}>
+          <View style={styles.receiptInput}>
+            <Text style={styles.receiptHash}>#</Text>
+            <TextInput
+              style={styles.receiptField}
+              placeholder="Ej. REF-88392"
+              placeholderTextColor="#B0B0BE"
+              value={receipt}
+              onChangeText={setReceipt}
+            />
+          </View>
+          <Pressable style={styles.scanBtn}>
+            <Text style={{ fontSize: 20 }}>📷</Text>
           </Pressable>
+        </View>
 
-          {/* Aviso */}
-          <Card style={{ backgroundColor: colors.warningLight }}>
-            <Text style={{ ...typography.caption, color: colors.warning }}>
-              ⚠️ Un abono parcial no activa servicios de grúa/siniestros. Solo el pago completo activa la cobertura.
-            </Text>
-          </Card>
+        {/* Foto comprobante */}
+        <Pressable style={styles.photoArea}>
+          <Text style={{ fontSize: 28 }}>📸</Text>
+          <Text style={styles.photoText}>Adjuntar Comprobante (Foto)</Text>
+        </Pressable>
 
-          <Button
-            title="ENVIAR ABONO  ✓"
-            onPress={handleSubmit}
-            loading={loading}
-            size="lg"
-            style={{ marginTop: spacing.xl }}
-          />
-        </ScrollView>
-      </SafeAreaView>
+        {/* Warning */}
+        <View style={styles.warningCard}>
+          <Text style={{ fontSize: 16, marginRight: 10 }}>⚠️</Text>
+          <Text style={styles.warningText}>
+            Un abono parcial no activa servicios de grúa/siniestros. Solo el pago completo activa la cobertura.
+          </Text>
+        </View>
 
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      {/* Bottom button */}
+      <View style={styles.bottomBar}>
+        <Pressable style={styles.submitBtn} onPress={handleSubmit}>
+          <Text style={styles.submitText}>ENVIAR ABONO</Text>
+          <Text style={{ fontSize: 16, color: colors.white, marginLeft: 8 }}>✔</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  scroll: { padding: spacing.lg, paddingBottom: 40 },
-  folioLabel: { ...typography.captionBold, color: colors.gray500, marginBottom: spacing.md },
-  sectionTitle: {
-    ...typography.captionBold,
-    color: colors.gray500,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: spacing.sm,
-  },
-  row: { ...typography.body, color: colors.gray700, marginBottom: 2 },
-  bold: { fontWeight: '700', color: colors.gray900 },
-  maxHint: { ...typography.caption, color: colors.gray400, marginTop: -spacing.sm, marginBottom: spacing.lg },
-  fieldLabel: {
-    ...typography.captionBold,
-    color: colors.gray700,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.sm,
-  },
-  methodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.xl },
-  methodChip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.gray100,
-  },
-  methodChipActive: { backgroundColor: colors.primary },
-  methodText: { ...typography.captionBold, color: colors.gray600 },
-  methodTextActive: { color: colors.white },
-  photoBtn: {
-    backgroundColor: colors.gray100,
-    borderRadius: radius.md,
-    padding: spacing.xl,
+  safe: { flex: 1, backgroundColor: colors.primary },
+
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.gray300,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.primary,
   },
-  photoBtnText: { ...typography.bodyBold, color: colors.primary },
+  backArrow: { fontSize: 22, color: colors.white, fontWeight: '600' },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.white },
+  headerSub: { fontSize: 14, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+
+  scrollView: { flex: 1, backgroundColor: colors.background },
+  scroll: { padding: 16 },
+
+  // Account card
+  accountCard: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  accountHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  accountTitle: { fontSize: 14, color: '#3C3C43' },
+  activeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F9EE',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  activeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#34C759', marginRight: 6 },
+  activeText: { fontSize: 13, color: '#34C759', fontWeight: '600' },
+  accountDivider: { height: 1, backgroundColor: '#E5E5EA', marginVertical: 12 },
+  amountsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  amountLabel: { fontSize: 12, color: '#8E8E93', marginBottom: 4 },
+  amountValue: { fontSize: 22, fontWeight: '800', color: '#1A1A1A' },
+  paidRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+  paidAmount: { fontSize: 16, fontWeight: '600', color: '#1A1A1A' },
+  seqBadge: {
+    backgroundColor: '#F0F0F5',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  seqBadgeText: { fontSize: 12, color: '#8E8E93' },
+  progressTrack: {
+    height: 8,
+    backgroundColor: '#E8E8E8',
+    borderRadius: 4,
+    marginTop: 12,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: 4,
+  },
+
+  // Fields
+  fieldLabel: { fontSize: 14, color: '#3C3C43', fontWeight: '500', marginBottom: 8, marginTop: 4 },
+
+  amountInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    paddingHorizontal: 16,
+    height: 56,
+  },
+  currencyPrefix: { fontSize: 18, fontWeight: '600', color: '#1A1A1A', marginRight: 4 },
+  amountInputField: { flex: 1, fontSize: 18, color: '#1A1A1A' },
+  currencySuffix: { fontSize: 14, color: '#8E8E93', fontWeight: '500' },
+  amountHintRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    marginBottom: 20,
+  },
+  amountHint: { fontSize: 13, color: '#8E8E93' },
+
+  methodsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  methodCard: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: '#E5E5EA',
+    borderRadius: 12,
+    paddingVertical: 14,
+    gap: 6,
+  },
+  methodCardActive: {
+    borderColor: colors.primary,
+    borderWidth: 2,
+    backgroundColor: '#F8F7FF',
+  },
+  methodText: { fontSize: 11, fontWeight: '700', color: '#6C6C70', letterSpacing: 0.5 },
+
+  receiptRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  receiptInput: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    paddingHorizontal: 16,
+    height: 50,
+  },
+  receiptHash: { fontSize: 16, color: '#8E8E93', marginRight: 8 },
+  receiptField: { flex: 1, fontSize: 15, color: '#1A1A1A' },
+  scanBtn: {
+    width: 50,
+    height: 50,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  photoArea: {
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: '#B0B0E8',
+    borderRadius: 16,
+    backgroundColor: '#FAFAFF',
+    paddingVertical: 32,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  photoText: { fontSize: 14, color: colors.primary, fontWeight: '500', marginTop: 8 },
+
+  warningCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'flex-start',
+  },
+  warningText: { flex: 1, fontSize: 14, color: '#3C3C43', lineHeight: 20 },
+
+  bottomBar: {
+    backgroundColor: colors.background,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 24,
+  },
+  submitBtn: {
+    flexDirection: 'row',
+    backgroundColor: colors.primary,
+    borderRadius: 14,
+    paddingVertical: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  submitText: { fontSize: 16, fontWeight: '700', color: colors.white, letterSpacing: 0.5 },
 });

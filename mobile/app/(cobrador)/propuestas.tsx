@@ -1,166 +1,271 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
-  RefreshControl,
+  ScrollView,
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Card, Badge } from '@/components/ui';
-import { colors, spacing, typography, radius } from '@/theme';
-import { formatMoney, formatTime, formatDateFull } from '@/utils/format';
-import { Proposal, ProposalStatus } from '@/types';
+import { colors, spacing } from '@/theme';
+import { formatMoney, formatDateFull } from '@/utils/format';
 
-const statusConfig: Record<ProposalStatus, { label: string; variant: 'warning' | 'success' | 'danger' | 'info'; icon: string }> = {
-  pendiente: { label: 'PENDIENTE', variant: 'warning', icon: '⏳' },
-  aprobado: { label: 'APROBADO', variant: 'success', icon: '✅' },
-  rechazado: { label: 'RECHAZADO', variant: 'danger', icon: '❌' },
-  corregido: { label: 'CORREGIDO', variant: 'info', icon: '🔧' },
-};
+type ProposalStatus = 'pending' | 'approved' | 'rejected';
 
-type FilterType = 'todas' | 'pendiente' | 'aprobado' | 'rechazado';
+interface Proposal {
+  id: string;
+  folio: string;
+  payment_number: number;
+  amount: string;
+  method: string;
+  status: ProposalStatus;
+  time: string;
+  reject_reason?: string;
+}
 
-// TODO: mock data
 const MOCK_PROPOSALS: Proposal[] = [
-  { id: 1, folio: '18510', client_name: 'Roberto Sánchez', payment_number: 1, amount: '1401.00', method: 'efectivo', receipt_number: 'A00147', receipt_photo_url: null, status: 'pendiente', rejection_reason: null, created_at: '2026-02-23T10:15:00-06:00', reviewed_at: null, reviewed_by: null, is_partial: false, partial_seq: null },
-  { id: 2, folio: '18405', client_name: 'María López', payment_number: 3, amount: '1200.00', method: 'efectivo', receipt_number: 'A00148', receipt_photo_url: null, status: 'aprobado', rejection_reason: null, created_at: '2026-02-23T09:30:00-06:00', reviewed_at: '2026-02-23T11:30:00-06:00', reviewed_by: 'Elena', is_partial: false, partial_seq: null },
-  { id: 3, folio: '18615', client_name: 'Carmen Ruiz', payment_number: 4, amount: '920.00', method: 'efectivo', receipt_number: 'A0234', receipt_photo_url: null, status: 'rechazado', rejection_reason: 'Recibo incorrecto (#A0234)', created_at: '2026-02-23T08:45:00-06:00', reviewed_at: '2026-02-23T10:00:00-06:00', reviewed_by: 'Elena', is_partial: false, partial_seq: null },
+  { id: '1', folio: '18510', payment_number: 1, amount: '1401.00', method: 'Efectivo', status: 'pending', time: '10:15 AM' },
+  { id: '2', folio: '18405', payment_number: 3, amount: '1200.00', method: 'Efectivo', status: 'approved', time: '11:30 AM' },
+  { id: '3', folio: '18615', payment_number: 4, amount: '920.00', method: 'Efectivo', status: 'rejected', time: '8:45 AM', reject_reason: 'Recibo incorrecto. La foto no es legible.' },
 ];
 
-export default function MisPropuestas() {
+const STATUS_CONFIG: Record<ProposalStatus, { label: string; color: string; bg: string; border: string }> = {
+  pending: { label: 'PENDIENTE', color: '#92600A', bg: '#FEF3C7', border: '#FACC15' },
+  approved: { label: 'APROBADO', color: '#1B7A34', bg: '#DEF7E4', border: '#34C759' },
+  rejected: { label: 'RECHAZADO', color: '#C0281E', bg: '#FEE2E0', border: '#FF3B30' },
+};
+
+const FILTERS: { key: string; label: string }[] = [
+  { key: 'all', label: 'Todas' },
+  { key: 'pending', label: 'Pendientes' },
+  { key: 'approved', label: 'Aprobadas' },
+  { key: 'rejected', label: 'Rechazadas' },
+];
+
+export default function PropuestasScreen() {
   const router = useRouter();
-  const [filter, setFilter] = useState<FilterType>('todas');
-  const [refreshing, setRefreshing] = useState(false);
-  const [proposals] = useState(MOCK_PROPOSALS);
+  const [filter, setFilter] = useState('all');
+  const proposals = filter === 'all' ? MOCK_PROPOSALS : MOCK_PROPOSALS.filter(p => p.status === filter);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 800);
-  }, []);
-
-  const filtered = proposals.filter((p) =>
-    filter === 'todas' ? true : p.status === filter
-  );
-
-  const summary = {
-    aprobadas: proposals.filter(p => p.status === 'aprobado').length,
-    montoAprobado: proposals.filter(p => p.status === 'aprobado').reduce((acc, p) => acc + parseFloat(p.amount), 0),
-    pendientes: proposals.filter(p => p.status === 'pendiente').length,
-    montoPendiente: proposals.filter(p => p.status === 'pendiente').reduce((acc, p) => acc + parseFloat(p.amount), 0),
-    rechazadas: proposals.filter(p => p.status === 'rechazado').length,
-  };
-
-  const renderProposal = ({ item }: { item: Proposal }) => {
-    const cfg = statusConfig[item.status];
-    return (
-      <Card>
-        <View style={styles.proposalHeader}>
-          <Badge label={`${cfg.icon} ${cfg.label}`} variant={cfg.variant} />
-          <Text style={styles.time}>{formatTime(item.created_at)}</Text>
-        </View>
-        <Text style={styles.folioText}>F: {item.folio} · Pago #{item.payment_number}</Text>
-        <Text style={styles.detail}>{formatMoney(item.amount)} · {item.method}</Text>
-        {item.status === 'rechazado' && item.rejection_reason && (
-          <View style={styles.rejectionBox}>
-            <Text style={styles.rejectionText}>Motivo: "{item.rejection_reason}"</Text>
-            <Pressable
-              onPress={() => router.push({
-                pathname: '/(cobrador)/cobros/nuevo',
-                params: { folio: item.folio },
-              })}
-            >
-              <Text style={styles.correctLink}>Corregir y reenviar →</Text>
-            </Pressable>
-          </View>
-        )}
-      </Card>
-    );
-  };
+  const approved = MOCK_PROPOSALS.filter(p => p.status === 'approved');
+  const pending = MOCK_PROPOSALS.filter(p => p.status === 'pending');
+  const rejected = MOCK_PROPOSALS.filter(p => p.status === 'rejected');
+  const approvedTotal = approved.reduce((s, p) => s + parseFloat(p.amount), 0);
+  const pendingTotal = pending.reduce((s, p) => s + parseFloat(p.amount), 0);
 
   return (
-    <SafeAreaView edges={[]} style={styles.container}>
-      <Text style={styles.dateHeader}>{formatDateFull(new Date().toISOString())}</Text>
-      <Text style={styles.count}>{proposals.length} propuestas enviadas</Text>
-
-      {/* Filtros */}
-      <View style={styles.filters}>
-        {(['todas', 'pendiente', 'aprobado', 'rechazado'] as FilterType[]).map((f) => (
-          <Pressable
-            key={f}
-            onPress={() => setFilter(f)}
-            style={[styles.chip, filter === f && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, filter === f && styles.chipTextActive]}>
-              {f === 'todas' ? 'Todas' : f === 'pendiente' ? 'Pend.' : f.charAt(0).toUpperCase() + f.slice(1) + 's'}
-            </Text>
-          </Pressable>
-        ))}
+    <SafeAreaView edges={['top']} style={styles.safe}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} style={{ width: 40 }}>
+          <Text style={styles.backArrow}>←</Text>
+        </Pressable>
+        <Text style={styles.headerTitle}>Mis Propuestas</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderProposal}
-        contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        ListFooterComponent={
-          <Card style={{ marginTop: spacing.lg }}>
-            <Text style={styles.summaryTitle}>RESUMEN DEL DÍA</Text>
-            <Text style={styles.summaryRow}>Aprobadas: {summary.aprobadas}   {formatMoney(summary.montoAprobado)}</Text>
-            <Text style={styles.summaryRow}>Pendientes: {summary.pendientes}   {formatMoney(summary.montoPendiente)}</Text>
-            <Text style={styles.summaryRow}>Rechazadas: {summary.rechazadas}</Text>
-          </Card>
-        }
-      />
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scroll}>
+        {/* Date section */}
+        <View style={styles.dateSection}>
+          <Text style={styles.dateTitle}>{formatDateFull(new Date().toISOString())}</Text>
+          <Text style={styles.dateSubtitle}>{MOCK_PROPOSALS.length} propuestas enviadas</Text>
+        </View>
+
+        {/* Filter chips */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersRow} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+          {FILTERS.map(f => (
+            <Pressable
+              key={f.key}
+              style={[styles.chip, filter === f.key && styles.chipActive]}
+              onPress={() => setFilter(f.key)}
+            >
+              <Text style={[styles.chipText, filter === f.key && styles.chipTextActive]}>
+                {f.label}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+
+        {/* Proposal cards */}
+        {proposals.map(p => {
+          const cfg = STATUS_CONFIG[p.status];
+          return (
+            <View key={p.id} style={[styles.proposalCard, { borderLeftColor: cfg.border }]}>
+              {/* Status + Folio row */}
+              <View style={styles.cardTopRow}>
+                <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
+                  <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
+                </View>
+                <Text style={styles.folioText}>F:{p.folio}</Text>
+              </View>
+
+              {/* Title */}
+              <Text style={styles.cardTitle}>
+                Pago #{p.payment_number} - {formatMoney(p.amount)}
+              </Text>
+
+              {p.status !== 'rejected' && (
+                <>
+                  {/* Divider */}
+                  <View style={styles.divider} />
+                  {/* Method */}
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoIcon}>💵</Text>
+                    <Text style={styles.infoText}>{p.method}</Text>
+                  </View>
+                  {/* Divider */}
+                  <View style={styles.divider} />
+                  {/* Time */}
+                  <View style={styles.infoRow}>
+                    {p.status === 'approved' ? (
+                      <>
+                        <Text style={styles.infoIcon}>✅</Text>
+                        <Text style={[styles.infoText, { color: '#34C759' }]}>Aprobado {p.time}</Text>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={styles.infoIcon}>🕐</Text>
+                        <Text style={styles.infoText}>Enviado {p.time}</Text>
+                      </>
+                    )}
+                  </View>
+                </>
+              )}
+
+              {p.status === 'rejected' && p.reject_reason && (
+                <View style={styles.rejectBox}>
+                  <View style={styles.rejectHeader}>
+                    <Text style={{ fontSize: 14 }}>⚠️</Text>
+                    <Text style={styles.rejectTitle}>MOTIVO</Text>
+                  </View>
+                  <Text style={styles.rejectReason}>{p.reject_reason}</Text>
+                </View>
+              )}
+            </View>
+          );
+        })}
+
+        <View style={{ height: 80 }} />
+      </ScrollView>
+
+      {/* Bottom summary bar */}
+      <View style={styles.summaryBar}>
+        <View style={styles.summaryCol}>
+          <Text style={styles.summaryLabel}>APROBADAS</Text>
+          <Text style={[styles.summaryNum, { color: '#34C759' }]}>
+            {approved.length} <Text style={styles.summaryAmount}>({formatMoney(String(approvedTotal))})</Text>
+          </Text>
+        </View>
+        <View style={styles.summaryCol}>
+          <Text style={styles.summaryLabel}>PENDIENTES</Text>
+          <Text style={[styles.summaryNum, { color: '#F5A623' }]}>
+            {pending.length} <Text style={styles.summaryAmount}>({formatMoney(String(pendingTotal))})</Text>
+          </Text>
+        </View>
+        <View style={styles.summaryCol}>
+          <Text style={styles.summaryLabel}>RECHAZADAS</Text>
+          <Text style={[styles.summaryNum, { color: '#FF3B30' }]}>{rejected.length}</Text>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  dateHeader: { ...typography.h3, color: colors.gray900, paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
-  count: { ...typography.caption, color: colors.gray500, paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
-  filters: {
+  safe: { flex: 1, backgroundColor: colors.primary },
+
+  header: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: colors.primary,
   },
+  backArrow: { fontSize: 22, color: colors.white, fontWeight: '600' },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.white },
+
+  scrollView: { flex: 1, backgroundColor: colors.background },
+  scroll: { paddingBottom: 20 },
+
+  dateSection: {
+    backgroundColor: colors.white,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+  },
+  dateTitle: { fontSize: 26, fontWeight: '700', color: '#1C1C1E' },
+  dateSubtitle: { fontSize: 14, color: colors.primary, marginTop: 4 },
+
+  filtersRow: { marginVertical: 12 },
   chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.full,
-    backgroundColor: colors.gray100,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: '#D1D1D6',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
   },
-  chipActive: { backgroundColor: colors.primary },
-  chipText: { ...typography.caption, color: colors.gray600 },
-  chipTextActive: { color: colors.white },
-  list: { paddingHorizontal: spacing.lg, paddingBottom: 40 },
-  proposalHeader: {
+  chipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  chipText: { fontSize: 14, color: '#3C3C43' },
+  chipTextActive: { color: colors.white, fontWeight: '600' },
+
+  proposalCard: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  cardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.sm,
   },
-  time: { ...typography.caption, color: colors.gray400 },
-  folioText: { ...typography.bodyBold, color: colors.gray800 },
-  detail: { ...typography.caption, color: colors.gray500, marginTop: 2 },
-  rejectionBox: {
-    marginTop: spacing.sm,
-    padding: spacing.md,
-    backgroundColor: colors.dangerLight,
-    borderRadius: radius.sm,
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
   },
-  rejectionText: { ...typography.caption, color: colors.danger },
-  correctLink: { ...typography.captionBold, color: colors.primary, marginTop: spacing.sm },
-  summaryTitle: {
-    ...typography.captionBold,
-    color: colors.gray500,
-    textTransform: 'uppercase',
-    marginBottom: spacing.sm,
+  statusText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  folioText: { fontSize: 13, color: '#8E8E93' },
+  cardTitle: { fontSize: 20, fontWeight: '700', color: '#1C1C1E', marginTop: 8 },
+
+  divider: { height: 1, backgroundColor: '#E5E5EA', marginVertical: 12 },
+
+  infoRow: { flexDirection: 'row', alignItems: 'center' },
+  infoIcon: { fontSize: 14, marginRight: 8 },
+  infoText: { fontSize: 14, color: '#6C6C70' },
+
+  rejectBox: {
+    backgroundColor: '#FFF0EF',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
   },
-  summaryRow: { ...typography.body, color: colors.gray700, marginBottom: 2 },
+  rejectHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  rejectTitle: { fontSize: 12, fontWeight: '700', color: '#1C1C1E', marginLeft: 6, letterSpacing: 0.5 },
+  rejectReason: { fontSize: 14, color: '#3C3C43' },
+
+  summaryBar: {
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5EA',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  summaryCol: { flex: 1, alignItems: 'center' },
+  summaryLabel: { fontSize: 10, color: '#8E8E93', fontWeight: '700', letterSpacing: 0.5, marginBottom: 4 },
+  summaryNum: { fontSize: 20, fontWeight: '700' },
+  summaryAmount: { fontSize: 12, fontWeight: '400' },
 });

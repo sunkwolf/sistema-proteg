@@ -199,6 +199,7 @@ export interface RouteStop {
   lat: number;
   lng: number;
   status: 'completed' | 'next' | 'pending';
+  time?: string | null;
 }
 
 // ── Notificaciones ──────────────────────

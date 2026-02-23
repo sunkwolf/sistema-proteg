@@ -60,6 +60,7 @@ export default function CobradorLayout() {
       <Tabs.Screen name="cobros/abono" options={{ href: null }} />
       <Tabs.Screen name="avisos/nuevo" options={{ href: null }} />
       <Tabs.Screen name="efectivo" options={{ href: null }} />
+      <Tabs.Screen name="notificaciones" options={{ href: null }} />
     </Tabs>
   );
 }
