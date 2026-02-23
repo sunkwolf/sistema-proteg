@@ -1,33 +1,32 @@
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/auth';
 import { colors } from '@/theme';
 
 export default function Index() {
-  const router = useRouter();
   const { isLoading, isAuthenticated, user } = useAuthStore();
 
-  useEffect(() => {
-    if (isLoading) return;
+  // Still loading auth state from storage
+  if (isLoading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
-    if (!isAuthenticated) {
-      router.replace('/(auth)/login');
-      return;
-    }
+  // Not authenticated — go to login
+  if (!isAuthenticated) {
+    return <Redirect href="/(auth)/login" />;
+  }
 
-    if (user?.role === 'gerente_cobranza' || user?.role === 'auxiliar_cobranza') {
-      router.replace('/(gerente)');
-    } else {
-      router.replace('/(cobrador)');
-    }
-  }, [isLoading, isAuthenticated, user?.role]);
+  // Authenticated — route by role
+  if (user?.role === 'gerente_cobranza' || user?.role === 'auxiliar_cobranza') {
+    return <Redirect href="/(gerente)" />;
+  }
 
-  return (
-    <View style={styles.center}>
-      <ActivityIndicator size="large" color={colors.primary} />
-    </View>
-  );
+  return <Redirect href="/(cobrador)" />;
 }
 
 const styles = StyleSheet.create({
