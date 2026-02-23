@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   value: {
-    fontSize: 36,
+    fontSize: 22,
     fontWeight: '800',
     color: colors.textDark,
     marginTop: 12,
