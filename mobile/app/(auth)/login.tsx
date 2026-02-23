@@ -77,7 +77,7 @@ export default function LoginScreen() {
           {/* Logo */}
           <View style={styles.logoArea}>
             <Image
-              source={require('@/../../assets/logo-protegrt.png')}
+              source={require('../../../assets/logo-protegrt.png')}
               style={styles.logoImage}
               resizeMode="contain"
             />
