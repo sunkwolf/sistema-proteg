@@ -1,29 +1,33 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { Redirect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/auth';
 import { colors } from '@/theme';
 
 export default function Index() {
+  const router = useRouter();
   const { isLoading, isAuthenticated, user } = useAuthStore();
 
-  if (isLoading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
+  useEffect(() => {
+    if (isLoading) return;
 
-  if (!isAuthenticated) {
-    return <Redirect href="/(auth)/login" />;
-  }
+    if (!isAuthenticated) {
+      router.replace('/(auth)/login');
+      return;
+    }
 
-  if (user?.role === 'gerente_cobranza' || user?.role === 'auxiliar_cobranza') {
-    return <Redirect href="/(gerente)" />;
-  }
+    if (user?.role === 'gerente_cobranza' || user?.role === 'auxiliar_cobranza') {
+      router.replace('/(gerente)');
+    } else {
+      router.replace('/(cobrador)');
+    }
+  }, [isLoading, isAuthenticated, user?.role]);
 
-  return <Redirect href="/(cobrador)" />;
+  return (
+    <View style={styles.center}>
+      <ActivityIndicator size="large" color={colors.primary} />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

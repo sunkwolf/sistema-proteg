@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/auth';
 import * as authApi from '@/api/auth';
 import { loginSchema, LoginForm } from '@/schemas/collections';
@@ -19,6 +20,7 @@ import { Input, Button } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 export default function LoginScreen() {
+  const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
   const [loading, setLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
@@ -28,12 +30,21 @@ export default function LoginScreen() {
     defaultValues: { username: '', password: '' },
   });
 
+  const navigateByRole = (role: string) => {
+    if (role === 'gerente_cobranza' || role === 'auxiliar_cobranza') {
+      router.replace('/(gerente)');
+    } else {
+      router.replace('/(cobrador)');
+    }
+  };
+
   const mockLogin = async (role: 'cobrador' | 'gerente_cobranza') => {
     const mockUsers = {
       cobrador: { id: 1, name: 'Edgar Martinez', username: 'edgar.m', role: 'cobrador' as const, zone: 'Zona Norte', avatar_url: null },
       gerente_cobranza: { id: 2, name: 'Gabriela Lopez', username: 'gaby.l', role: 'gerente_cobranza' as const, zone: null, avatar_url: null },
     };
     await setAuth(mockUsers[role], 'mock-token-123', 'mock-refresh-456');
+    navigateByRole(role);
   };
 
   const onSubmit = async (data: LoginForm) => {
@@ -41,6 +52,7 @@ export default function LoginScreen() {
     try {
       const result = await authApi.login(data.username, data.password);
       await setAuth(result.user, result.token, result.refresh_token);
+      navigateByRole(result.user.role);
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Usuario o contraseña incorrectos';
       Alert.alert('Error', msg);
