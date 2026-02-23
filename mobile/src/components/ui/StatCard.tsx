@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { colors, spacing, radius, cardShadow } from '@/theme';
 
-const CARD_WIDTH = (Dimensions.get('window').width - 40 - 12) / 2;
+const CARD_WIDTH = (Dimensions.get('window').width - 32 - 12) / 2; // 32 = 16px padding each side, 12 = gap
 
 interface StatCardProps {
   icon: string;
@@ -21,7 +21,7 @@ export function StatCard({ icon, iconBg, label, value }: StatCardProps) {
         </View>
         <Text style={styles.label}>{label}</Text>
       </View>
-      <Text style={styles.value}>{value}</Text>
+      <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
     </View>
   );
 }

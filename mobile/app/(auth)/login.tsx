@@ -76,11 +76,13 @@ export default function LoginScreen() {
         >
           {/* Logo */}
           <View style={styles.logoArea}>
-            <Image
-              source={require('../../assets/logo-protegrt.png')}
-              style={styles.logoImage}
-              resizeMode="contain"
-            />
+            <View style={styles.logoCircle}>
+              <Image
+                source={require('../../assets/logo-protegrt.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+            </View>
             <Text style={styles.logoTitle}>Proteg-rt</Text>
             <Text style={styles.logoSubtitle}>Mutualidad de Seguros</Text>
           </View>
@@ -173,10 +175,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
   },
-  logoImage: {
-    width: 100,
-    height: 100,
+  logoCircle: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
   },
   logoTitle: {
     fontSize: 32,

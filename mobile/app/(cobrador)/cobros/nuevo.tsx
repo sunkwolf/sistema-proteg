@@ -92,22 +92,31 @@ export default function NuevoCobro() {
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scroll}>
-        {/* Progress card */}
-        <View style={styles.progressCard}>
-          <View style={styles.progressHeader}>
-            <View>
-              <Text style={styles.paymentSeq}>Pago #{MOCK.payment_number} de {MOCK.total_payments}</Text>
-              <Text style={styles.expectedLabel}>Monto esperado</Text>
-              <Text style={styles.expectedAmount}>{formatMoney(MOCK.expected)}</Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <View style={[styles.timeBadge, { borderColor: MOCK.on_time ? '#34C759' : '#FF3B30' }]}>
-                <Text style={[styles.timeBadgeText, { color: MOCK.on_time ? '#34C759' : '#FF3B30' }]}>
-                  {MOCK.on_time ? 'En tiempo' : 'Vencido'}
-                </Text>
-              </View>
+        {/* Estado de cuenta card (mismo estilo que abono parcial) */}
+        <View style={styles.accountCard}>
+          <View style={styles.accountHeader}>
+            <Text style={styles.accountTitle}>Estado de Cuenta</Text>
+            <View style={[styles.statusBadge, { borderColor: MOCK.on_time ? '#34C759' : '#FF3B30' }]}>
+              <View style={[styles.statusDot, { backgroundColor: MOCK.on_time ? '#34C759' : '#FF3B30' }]} />
+              <Text style={[styles.statusText, { color: MOCK.on_time ? '#34C759' : '#FF3B30' }]}>
+                {MOCK.on_time ? 'En tiempo' : 'Vencido'}
+              </Text>
             </View>
           </View>
+
+          <View style={styles.accountDivider} />
+
+          <View style={styles.amountsRow}>
+            <View>
+              <Text style={styles.amountLabel}>Monto esperado</Text>
+              <Text style={styles.amountValue}>{formatMoney(MOCK.expected)}</Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={styles.amountLabel}>Pago</Text>
+              <Text style={styles.paySeq}>#{MOCK.payment_number} de {MOCK.total_payments}</Text>
+            </View>
+          </View>
+
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
           </View>
@@ -214,8 +223,8 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: 16 },
 
-  // Progress card
-  progressCard: {
+  // Account card (same pattern as abono parcial)
+  accountCard: {
     backgroundColor: colors.white,
     borderRadius: 12,
     padding: 20,
@@ -226,21 +235,27 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  progressHeader: {
+  accountHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    alignItems: 'center',
   },
-  paymentSeq: { fontSize: 13, color: '#8E8E93', marginBottom: 4 },
-  expectedLabel: { fontSize: 12, color: '#8E8E93', marginBottom: 2 },
-  expectedAmount: { fontSize: 24, fontWeight: '800', color: '#1A1A1A' },
-  timeBadge: {
-    borderWidth: 1.5,
-    borderRadius: 12,
+  accountTitle: { fontSize: 14, color: '#3C3C43' },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F9EE',
     paddingHorizontal: 12,
     paddingVertical: 4,
+    borderRadius: 12,
   },
-  timeBadgeText: { fontSize: 12, fontWeight: '600' },
+  statusDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
+  statusText: { fontSize: 13, fontWeight: '600' },
+  accountDivider: { height: 1, backgroundColor: '#E5E5EA', marginVertical: 12 },
+  amountsRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  amountLabel: { fontSize: 12, color: '#8E8E93', marginBottom: 4 },
+  amountValue: { fontSize: 22, fontWeight: '800', color: '#1A1A1A' },
+  paySeq: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
   progressTrack: {
     height: 8,
     backgroundColor: '#E8E8E8',
