@@ -1,11 +1,11 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Redirect } from 'expo-router';
-import { useAuth } from '@/context/AuthContext';
+import { useAuthStore } from '@/store/auth';
 import { colors } from '@/theme';
 
 export default function Index() {
-  const { isLoading, isAuthenticated, user } = useAuth();
+  const { isLoading, isAuthenticated, user } = useAuthStore();
 
   if (isLoading) {
     return (
@@ -19,7 +19,6 @@ export default function Index() {
     return <Redirect href="/(auth)/login" />;
   }
 
-  // Redirigir según rol
   if (user?.role === 'gerente_cobranza' || user?.role === 'auxiliar_cobranza') {
     return <Redirect href="/(gerente)" />;
   }

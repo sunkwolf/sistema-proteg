@@ -1,6 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { API_BASE_URL, AUTH } from '@/config';
+import { useAuthStore } from '@/store/auth';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -8,24 +9,21 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Interceptor: inyecta token en cada request
+// Interceptor: inyecta token
 api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
-  const token = await SecureStore.getItemAsync(AUTH.TOKEN_KEY);
+  const token = useAuthStore.getState().token;
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Interceptor: maneja 401 (token expirado)
+// Interceptor: 401 → logout
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // TODO: implementar refresh token
-      await SecureStore.deleteItemAsync(AUTH.TOKEN_KEY);
-      await SecureStore.deleteItemAsync(AUTH.REFRESH_KEY);
-      await SecureStore.deleteItemAsync(AUTH.USER_KEY);
+      await useAuthStore.getState().logout();
     }
     return Promise.reject(error);
   }

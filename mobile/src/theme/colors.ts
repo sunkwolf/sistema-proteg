@@ -1,42 +1,41 @@
+/**
+ * Paleta extraída de los mockups de Stitch — aprobados por Óscar y Elena.
+ * NO CAMBIAR sin autorización de Fer.
+ */
 export const colors = {
-  // ── Brand ────────────────────────────
-  primary: '#4F46E5',       // Indigo — botones principales
-  primaryLight: '#6366F1',
-  primaryDark: '#4338CA',
+  // ── Brand (Stitch mockup) ────────────
+  primary: '#4A3AFF',
+  primaryLight: '#6C5CE7',
+  primaryBg: '#EDE9FF',
+
+  // ── Text ─────────────────────────────
+  textDark: '#1A1A2E',
+  textMedium: '#8E8E9A',
+  textLight: '#B0B0BE',
 
   // ── Semantic ─────────────────────────
-  success: '#16A34A',       // Verde — aprobado
-  successLight: '#DCFCE7',
-  warning: '#D97706',       // Amarillo — pendiente
-  warningLight: '#FEF3C7',
-  danger: '#DC2626',        // Rojo — rechazado / error
-  dangerLight: '#FEE2E2',
-  dangerDark: '#991B1B',    // Rojo oscuro — atraso >15 días
+  success: '#4CAF50',
+  successBg: '#E8F5E9',
+  error: '#FF3B30',
+  errorBg: '#FFEBEE',
+  orange: '#FF6B35',
+  orangeBg: '#FFF0E6',
+  badgeRed: '#FF3B30',
 
-  // ── Atraso de pago ───────────────────
-  overdueHigh: '#991B1B',   // >15 días — rojo oscuro
-  overdueMid: '#DC2626',    // 5-15 días — naranja/rojo
-  overdueLow: '#D97706',    // 1-5 días — amarillo
-  onTime: '#16A34A',        // Al día — verde
-  collected: '#6B7280',     // Ya cobrado — gris
+  // ── Atraso de pago (bordes cards) ────
+  overdueHigh: '#FF3B30',    // >15 días
+  overdueMid: '#FF6B35',     // 5-15 días
+  overdueLow: '#EAB308',     // 1-5 días
+  onTime: '#4CAF50',         // Al día
+  collected: '#B0B0BE',      // Ya cobrado
 
-  // ── Neutrals ─────────────────────────
+  // ── Surfaces ─────────────────────────
   white: '#FFFFFF',
-  gray50: '#F9FAFB',
-  gray100: '#F3F4F6',
-  gray200: '#E5E7EB',
-  gray300: '#D1D5DB',
-  gray400: '#9CA3AF',
-  gray500: '#6B7280',
-  gray600: '#4B5563',
-  gray700: '#374151',
-  gray800: '#1F2937',
-  gray900: '#111827',
-  black: '#000000',
+  background: '#F8F8FC',
+  border: '#F0F0F5',
+  divider: '#F5F5FA',
 
-  // ── Backgrounds ──────────────────────
-  background: '#F0F2F5',
-  surface: '#FFFFFF',
+  // ── Overlay ──────────────────────────
   overlay: 'rgba(0, 0, 0, 0.5)',
 } as const;
 

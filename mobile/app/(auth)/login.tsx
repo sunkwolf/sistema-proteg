@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -7,28 +7,32 @@ import {
   Platform,
   Pressable,
   Alert,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '@/context/AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAuthStore } from '@/store/auth';
+import * as authApi from '@/api/auth';
+import { loginSchema, LoginForm } from '@/schemas/collections';
 import { Input, Button } from '@/components/ui';
-import { colors, spacing, typography } from '@/theme';
+import { colors, spacing } from '@/theme';
 
 export default function LoginScreen() {
-  const { login } = useAuth();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const [loading, setLoading] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
 
-  const handleLogin = async () => {
-    if (!username.trim() || !password.trim()) {
-      Alert.alert('Error', 'Ingresa tu usuario y contraseña');
-      return;
-    }
+  const { control, handleSubmit, formState: { errors } } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { username: '', password: '' },
+  });
+
+  const onSubmit = async (data: LoginForm) => {
     setLoading(true);
     try {
-      await login(username.trim(), password);
+      const result = await authApi.login(data.username, data.password);
+      await setAuth(result.user, result.token, result.refresh_token);
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Usuario o contraseña incorrectos';
       Alert.alert('Error', msg);
@@ -38,93 +42,158 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.content}
-      >
-        <View style={styles.logoArea}>
-          {/* TODO: reemplazar con logo real */}
-          <View style={styles.logoPlaceholder}>
-            <Text style={styles.logoText}>PROTEG</Text>
+    <LinearGradient
+      colors={['#4A3AFF', '#6C5CE7', '#8B5CF6']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.gradient}
+    >
+      <SafeAreaView style={styles.safe}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.content}
+        >
+          {/* Logo */}
+          <View style={styles.logoArea}>
+            <View style={styles.logoCircle}>
+              <Text style={styles.logoIcon}>🛡️</Text>
+            </View>
+            <Text style={styles.logoTitle}>Proteg-rt</Text>
+            <Text style={styles.logoSubtitle}>Mutualidad de Seguros</Text>
           </View>
-          <Text style={styles.subtitle}>Mutualidad Proteg-rt</Text>
-        </View>
 
-        <View style={styles.form}>
-          <Input
-            label="Usuario"
-            placeholder="tu.usuario"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="next"
-          />
+          {/* Form Card */}
+          <View style={styles.formCard}>
+            <Text style={styles.formTitle}>Iniciar Sesión</Text>
+            <Text style={styles.formSubtitle}>Ingresa tus credenciales para continuar</Text>
 
-          <Input
-            label="Contraseña"
-            placeholder="••••••••"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            returnKeyType="done"
-            onSubmitEditing={handleLogin}
-            rightIcon={
-              <Pressable onPress={() => setShowPassword(!showPassword)}>
-                <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁️'}</Text>
-              </Pressable>
-            }
-          />
+            <Controller
+              control={control}
+              name="username"
+              render={({ field: { onChange, value } }) => (
+                <Input
+                  label="USUARIO"
+                  placeholder="tu.usuario"
+                  value={value}
+                  onChangeText={onChange}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="next"
+                  error={errors.username?.message}
+                />
+              )}
+            />
 
-          <Button
-            title="INICIAR SESIÓN"
-            onPress={handleLogin}
-            loading={loading}
-            size="lg"
-            style={{ marginTop: spacing.md }}
-          />
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            <Controller
+              control={control}
+              name="password"
+              render={({ field: { onChange, value } }) => (
+                <Input
+                  label="CONTRASEÑA"
+                  placeholder="••••••••"
+                  value={value}
+                  onChangeText={onChange}
+                  secureTextEntry={!showPassword}
+                  returnKeyType="done"
+                  error={errors.password?.message}
+                  rightIcon={
+                    <Pressable onPress={() => setShowPassword(!showPassword)}>
+                      <Text style={{ fontSize: 18 }}>{showPassword ? '🙈' : '👁️'}</Text>
+                    </Pressable>
+                  }
+                />
+              )}
+            />
+
+            <Button
+              title="INICIAR SESIÓN"
+              onPress={handleSubmit(onSubmit)}
+              loading={loading}
+              size="lg"
+              style={{ marginTop: spacing.sm }}
+            />
+
+            <Pressable style={styles.biometricBtn}>
+              <Text style={styles.biometricText}>🔑 Usar biometría</Text>
+            </Pressable>
+          </View>
+
+          <Text style={styles.version}>v0.1.0</Text>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+  gradient: { flex: 1 },
+  safe: { flex: 1 },
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: spacing['3xl'],
+    paddingHorizontal: 24,
   },
   logoArea: {
     alignItems: 'center',
-    marginBottom: spacing['4xl'],
+    marginBottom: 32,
   },
-  logoPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
+  logoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: 16,
   },
-  logoText: {
-    color: colors.white,
-    fontSize: 22,
+  logoIcon: { fontSize: 36 },
+  logoTitle: {
+    fontSize: 32,
     fontWeight: '800',
-    letterSpacing: 2,
+    color: colors.white,
+    letterSpacing: 1,
   },
-  subtitle: {
-    ...typography.body,
-    color: colors.gray500,
+  logoSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 4,
   },
-  form: {},
-  eyeIcon: {
-    fontSize: 20,
+  formCard: {
+    backgroundColor: colors.white,
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 30,
+    elevation: 10,
+  },
+  formTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.textDark,
+    marginBottom: 4,
+  },
+  formSubtitle: {
+    fontSize: 14,
+    color: colors.textMedium,
+    marginBottom: 24,
+  },
+  biometricBtn: {
+    alignItems: 'center',
+    marginTop: 20,
+    padding: 12,
+  },
+  biometricText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  version: {
+    textAlign: 'center',
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 12,
+    marginTop: 24,
   },
 });

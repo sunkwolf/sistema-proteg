@@ -9,13 +9,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/context/AuthContext';
+import { useAuthStore } from '@/store/auth';
 import { Card } from '@/components/ui';
 import { colors, spacing, typography } from '@/theme';
 import { formatMoney, formatDateFull } from '@/utils/format';
 
 export default function DashboardGerente() {
-  const { user, logout } = useAuth();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
 

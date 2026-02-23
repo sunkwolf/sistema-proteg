@@ -1,8 +1,8 @@
 import React from 'react';
-import { Pressable, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
-import { colors, spacing, radius, typography } from '@/theme';
+import { Pressable, Text, StyleSheet, ActivityIndicator, ViewStyle } from 'react-native';
+import { colors, spacing, radius } from '@/theme';
 
-type ButtonVariant = 'primary' | 'success' | 'danger' | 'secondary' | 'ghost';
+type ButtonVariant = 'primary' | 'success' | 'danger' | 'secondary' | 'outline' | 'ghost';
 
 interface ButtonProps {
   title: string;
@@ -15,29 +15,24 @@ interface ButtonProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-const variantStyles: Record<ButtonVariant, { bg: string; text: string }> = {
+const variantStyles: Record<ButtonVariant, { bg: string; text: string; border?: string }> = {
   primary: { bg: colors.primary, text: colors.white },
   success: { bg: colors.success, text: colors.white },
-  danger: { bg: colors.danger, text: colors.white },
-  secondary: { bg: colors.gray100, text: colors.gray800 },
+  danger: { bg: colors.error, text: colors.white },
+  secondary: { bg: colors.primaryBg, text: colors.primary },
+  outline: { bg: 'transparent', text: colors.primary, border: colors.primary },
   ghost: { bg: 'transparent', text: colors.primary },
 };
 
 const sizeStyles: Record<string, { height: number; fontSize: number }> = {
-  sm: { height: 36, fontSize: 14 },
-  md: { height: 48, fontSize: 16 },
-  lg: { height: 56, fontSize: 18 },
+  sm: { height: 36, fontSize: 13 },
+  md: { height: 48, fontSize: 15 },
+  lg: { height: 56, fontSize: 16 },
 };
 
 export function Button({
-  title,
-  onPress,
-  variant = 'primary',
-  icon,
-  loading = false,
-  disabled = false,
-  style,
-  size = 'md',
+  title, onPress, variant = 'primary', icon, loading = false,
+  disabled = false, style, size = 'md',
 }: ButtonProps) {
   const v = variantStyles[variant];
   const s = sizeStyles[size];
@@ -52,6 +47,8 @@ export function Button({
           backgroundColor: v.bg,
           height: s.height,
           opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
+          borderWidth: v.border ? 1.5 : 0,
+          borderColor: v.border || 'transparent',
         },
         style,
       ]}
@@ -75,6 +72,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   text: {
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
