@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  Alert,
   RefreshControl,
   Pressable,
   Dimensions,
@@ -32,7 +33,15 @@ export default function DashboardGerente() {
     <SafeAreaView edges={['top']} style={styles.screen}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable><Text style={styles.hamburger}>☰</Text></Pressable>
+        <Pressable onPress={() => {
+          Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Salir', style: 'destructive', onPress: async () => {
+              await logout();
+              router.replace('/(auth)/login');
+            }},
+          ]);
+        }}><Text style={styles.hamburger}>☰</Text></Pressable>
         <Text style={styles.headerTitle}>Proteg · Cobranza</Text>
         <Pressable>
           <Text style={styles.bellIcon}>🔔</Text>
@@ -141,9 +150,7 @@ export default function DashboardGerente() {
           />
         </View>
 
-        <Pressable onPress={logout} style={styles.logoutBtn}>
-          <Text style={styles.logoutText}>Cerrar sesión</Text>
-        </Pressable>
+        {/* Logout removido — ahora está en el menú ☰ del header */}
       </ScrollView>
     </SafeAreaView>
   );
