@@ -73,7 +73,7 @@ export default function DetalleProppuestaScreen() {
       <ScreenHeader
         title={`Propuesta #${MOCK.id}`}
         subtitle={`👤 ${MOCK.cobrador} · 🕐 ${MOCK.time}`}
-        rightIcon="⋮"
+        rightIcon="more"
       />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scroll}>

@@ -7,6 +7,7 @@ import {
   RefreshControl,
   Pressable,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Card, Badge } from '@/components/ui';
@@ -74,7 +75,7 @@ export default function PropuestasGerente() {
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()}>
-          <Text style={styles.backArrow}>←</Text>
+          <Ionicons name="chevron-back" size={24} color={colors.white} />
         </Pressable>
         <Text style={styles.headerTitle}>Propuestas</Text>
         <Text style={styles.filterIcon}>☰</Text>

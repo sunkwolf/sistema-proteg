@@ -1,15 +1,23 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons, Feather } from '@expo/vector-icons';
 import { colors } from '@/theme';
 
 interface ScreenHeaderProps {
   title: string;
   subtitle?: string;
   showBack?: boolean;
-  rightIcon?: string;
+  rightIcon?: 'more' | 'settings' | 'help' | 'search';
   onRightPress?: () => void;
 }
+
+const RIGHT_ICONS = {
+  more: { lib: 'Feather', name: 'more-vertical' },
+  settings: { lib: 'Ionicons', name: 'settings-outline' },
+  help: { lib: 'Ionicons', name: 'help-circle-outline' },
+  search: { lib: 'Feather', name: 'search' },
+};
 
 export function ScreenHeader({
   title,
@@ -24,7 +32,7 @@ export function ScreenHeader({
     <View style={styles.header}>
       {showBack ? (
         <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
-          <Text style={styles.backArrow}>←</Text>
+          <Ionicons name="chevron-back" size={24} color={colors.white} />
         </Pressable>
       ) : (
         <View style={styles.spacer} />
@@ -37,7 +45,11 @@ export function ScreenHeader({
 
       {rightIcon ? (
         <Pressable onPress={onRightPress} style={styles.rightBtn} hitSlop={8}>
-          <Text style={styles.rightIcon}>{rightIcon}</Text>
+          {RIGHT_ICONS[rightIcon].lib === 'Feather' ? (
+            <Feather name={RIGHT_ICONS[rightIcon].name as any} size={20} color={colors.white} />
+          ) : (
+            <Ionicons name={RIGHT_ICONS[rightIcon].name as any} size={22} color={colors.white} />
+          )}
         </Pressable>
       ) : (
         <View style={styles.spacer} />
@@ -56,11 +68,9 @@ const styles = StyleSheet.create({
     minHeight: 56,
   },
   backBtn: { width: 40, alignItems: 'flex-start' },
-  backArrow: { fontSize: 22, color: colors.white, fontWeight: '600' },
   titleBlock: { flex: 1, alignItems: 'center' },
   title: { fontSize: 18, fontWeight: '700', color: colors.white },
   subtitle: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 1 },
   rightBtn: { width: 40, alignItems: 'flex-end' },
-  rightIcon: { fontSize: 20, color: colors.white },
   spacer: { width: 40 },
 });

@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, spacing } from '@/theme';
@@ -70,7 +71,7 @@ export default function EfectivoScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={{ width: 40 }}>
-          <Text style={styles.backArrow}>←</Text>
+          <Ionicons name="chevron-back" size={24} color={colors.white} />
         </Pressable>
         <Text style={styles.headerTitle}>Efectivo Pendiente</Text>
         <View style={{ width: 40 }} />

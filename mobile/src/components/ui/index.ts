@@ -6,3 +6,6 @@ export { SectionHeader } from './SectionHeader';
 export { StatCard } from './StatCard';
 export { QuickAction } from './QuickAction';
 export { ScreenHeader } from './ScreenHeader';
+export { Icon } from './Icon';
+export { KeyboardScreen } from './KeyboardScreen';
+export type { IconName } from './Icon';

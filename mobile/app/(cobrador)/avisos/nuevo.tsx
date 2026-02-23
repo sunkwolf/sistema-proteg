@@ -8,6 +8,7 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, spacing } from '@/theme';
@@ -51,7 +52,7 @@ export default function AvisoVisitaScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={{ width: 40 }}>
-          <Text style={styles.backArrow}>←</Text>
+          <Ionicons name="chevron-back" size={24} color={colors.white} />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>Aviso de Visita</Text>

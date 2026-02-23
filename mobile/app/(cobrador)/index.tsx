@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '@/store/auth';
 import { SectionHeader, StatCard, QuickAction, Card } from '@/components/ui';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '@/theme';
 import { formatMoney, formatDateFull } from '@/utils/format';
 import { DashboardCobrador as DashboardCobradorData } from '@/types';
@@ -58,11 +59,11 @@ export default function DashboardCobrador() {
             }},
           ]);
         }}>
-          <Text style={styles.hamburger}>☰</Text>
+          <Feather name="menu" size={22} color={colors.textDark} />
         </Pressable>
         <Text style={styles.headerTitle}>Proteg-rt</Text>
         <Pressable onPress={() => router.push('/(cobrador)/notificaciones' as any)}>
-          <Text style={styles.bellIcon}>🔔</Text>
+          <Ionicons name="notifications" size={24} color={colors.textDark} />
           <View style={styles.badge}>
             <Text style={styles.badgeText}>2</Text>
           </View>

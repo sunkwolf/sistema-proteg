@@ -1,19 +1,15 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Text, View, StyleSheet } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/theme';
-
-function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
-  return <Text style={{ fontSize: 24, opacity: focused ? 1 : 0.45 }}>{emoji}</Text>;
-}
 
 export default function CobradorLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: false, // Cada pantalla maneja su propio header
+        headerShown: false,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textLight,
+        tabBarInactiveTintColor: '#A0A0B0',
         tabBarStyle: {
           backgroundColor: colors.white,
           borderTopWidth: 1,
@@ -29,28 +25,28 @@ export default function CobradorLayout() {
         name="index"
         options={{
           title: 'Inicio',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="folios/index"
         options={{
           title: 'Folios',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="📋" focused={focused} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="document-text" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="ruta"
         options={{
           title: 'Ruta',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🗺️" focused={focused} />,
+          tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="map-marker-path" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="propuestas"
         options={{
           title: 'Propuestas',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="📊" focused={focused} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="clipboard" size={size} color={color} />,
         }}
       />
 

@@ -95,7 +95,7 @@ export default function ConfirmarEfectivoScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.safe}>
-      <ScreenHeader title="Confirmar Efectivo" rightIcon="❓" />
+      <ScreenHeader title="Confirmar Efectivo" rightIcon="help" />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scroll}>
         {/* Cobrador card */}

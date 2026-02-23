@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/auth';
 import { Card, SectionHeader, QuickAction } from '@/components/ui';
+import { Feather } from '@expo/vector-icons';
 import { colors, spacing, radius } from '@/theme';
 import { formatMoney, formatDateFull } from '@/utils/format';
 
@@ -41,7 +42,7 @@ export default function DashboardGerente() {
               router.replace('/(auth)/login');
             }},
           ]);
-        }}><Text style={styles.hamburger}>☰</Text></Pressable>
+        }}><Feather name="menu" size={22} color={colors.textDark} /></Pressable>
         <Text style={styles.headerTitle}>Proteg · Cobranza</Text>
         <Pressable>
           <Text style={styles.bellIcon}>🔔</Text>

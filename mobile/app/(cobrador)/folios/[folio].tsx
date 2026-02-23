@@ -7,6 +7,7 @@ import {
   Linking,
   Pressable,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, spacing, typography } from '@/theme';
@@ -73,7 +74,7 @@ export default function FolioDetailScreen() {
       {/* ── Header púrpura ── */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>←</Text>
+          <Ionicons name="chevron-back" size={24} color={colors.white} />
         </Pressable>
         <Text style={styles.headerTitle}>Folio {data.folio}</Text>
         <View style={{ width: 40 }} />
