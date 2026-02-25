@@ -149,6 +149,18 @@ export default function DashboardGerente() {
             subtitle="Recepción de efectivo de cobradores"
             onPress={() => router.push('/(gerente)/efectivo')}
           />
+          <QuickAction
+            icon="🗺️"
+            title="Rutas en Tiempo Real"
+            subtitle="Ubicación actual de cobradores"
+            onPress={() => router.push('/(gerente)/rutas')}
+          />
+          <QuickAction
+            icon="📊"
+            title="Comisiones"
+            subtitle="Meta semanal y desglose por cobrador"
+            onPress={() => router.push('/(gerente)/comisiones')}
+          />
         </View>
 
         {/* Logout removido — ahora está en el menú ☰ del header */}

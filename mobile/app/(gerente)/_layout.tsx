@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { colors } from '@/theme';
 
 export default function GerenteLayout() {
@@ -43,8 +43,24 @@ export default function GerenteLayout() {
         }}
       />
 
+      <Tabs.Screen
+        name="rutas"
+        options={{
+          title: 'Rutas',
+          tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="map-marker-path" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="comisiones"
+        options={{
+          title: 'Comisiones',
+          tabBarIcon: ({ color, size }) => <Ionicons name="stats-chart" size={size} color={color} />,
+        }}
+      />
+
       {/* Hidden screens */}
       <Tabs.Screen name="propuestas/[id]" options={{ href: null }} />
+      <Tabs.Screen name="historial-ruta" options={{ href: null }} />
     </Tabs>
   );
 }
