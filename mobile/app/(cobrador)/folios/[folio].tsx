@@ -186,8 +186,8 @@ export default function FolioDetailScreen() {
             style={styles.btnAbono}
             onPress={() =>
               router.push({
-                pathname: '/(cobrador)/cobros/abono',
-                params: { folio: folio! },
+                pathname: '/(cobrador)/cobros/nuevo',
+                params: { folio: folio!, type: 'partial' },
               })
             }
           >
