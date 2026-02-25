@@ -43,9 +43,7 @@ export default function RegistrarCobroScreen() {
   const { folio, type } = useLocalSearchParams<{ folio: string; type?: string }>();
   const router = useRouter();
 
-  const [mode, setMode] = useState<'full' | 'partial'>(
-    type === 'partial' ? 'partial' : 'full'
-  );
+  const mode: 'full' | 'partial' = type === 'partial' ? 'partial' : 'full';
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<PaymentMethod>('efectivo');
   const [receiptNumber, setReceiptNumber] = useState('');
@@ -114,31 +112,13 @@ export default function RegistrarCobroScreen() {
           <Ionicons name="chevron-back" size={24} color={colors.white} />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Registrar Cobro</Text>
+          <Text style={styles.headerTitle}>
+            {isPartial ? 'Abono Parcial' : 'Registrar Cobro'}
+          </Text>
           <Text style={styles.headerSub}>
             F: {folio || MOCK.folio} · {MOCK.client}
           </Text>
         </View>
-      </View>
-
-      {/* Toggle Completo / Parcial */}
-      <View style={styles.toggleContainer}>
-        <Pressable
-          style={[styles.toggleBtn, !isPartial && styles.toggleBtnActive]}
-          onPress={() => { setMode('full'); setAmount(''); }}
-        >
-          <Text style={[styles.toggleText, !isPartial && styles.toggleTextActive]}>
-            ✅ COMPLETO
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.toggleBtn, isPartial && styles.toggleBtnPartial]}
-          onPress={() => { setMode('partial'); setAmount(''); }}
-        >
-          <Text style={[styles.toggleText, isPartial && styles.toggleTextPartial]}>
-            💰 PARCIAL
-          </Text>
-        </Pressable>
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scroll}>
@@ -351,40 +331,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 20, fontWeight: '700', color: colors.white },
   headerSub: { fontSize: 14, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
-
-  // Toggle
-  toggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: colors.primary,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 10,
-  },
-  toggleBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-  toggleBtnActive: {
-    backgroundColor: colors.white,
-  },
-  toggleBtnPartial: {
-    backgroundColor: '#FEF3C7',
-  },
-  toggleText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.7)',
-    letterSpacing: 0.5,
-  },
-  toggleTextActive: {
-    color: colors.primary,
-  },
-  toggleTextPartial: {
-    color: '#92400E',
-  },
 
   scrollView: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: 16 },
