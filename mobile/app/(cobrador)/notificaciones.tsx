@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   backArrow: { fontSize: 22, color: colors.white, fontWeight: '600' },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.white },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.white, flex: 1, textAlign: 'center' },
 
   scrollView: { flex: 1, backgroundColor: colors.background },
   scroll: { paddingBottom: 40 },

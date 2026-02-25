@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   hamburger: { fontSize: 22, color: colors.textDark },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.primary },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.primary, flex: 1, textAlign: 'center' },
   bellIcon: { fontSize: 22 },
   badge: {
     position: 'absolute',

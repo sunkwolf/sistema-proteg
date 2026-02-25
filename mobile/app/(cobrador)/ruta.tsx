@@ -73,9 +73,8 @@ export default function RutaScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color={colors.white} />
         </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Mi Ruta del Día</Text>
-        </View>
+        <Text style={styles.headerTitle}>Mi Ruta del Día</Text>
+        <View style={{ width: 40 }} />
         <Pressable style={{ width: 40, alignItems: 'flex-end' }}>
           <Text style={{ color: colors.white, fontSize: 20 }}>⋮</Text>
         </Pressable>
@@ -180,7 +179,7 @@ const styles = StyleSheet.create({
   },
   backBtn: { width: 40 },
   backArrow: { fontSize: 22, color: colors.white, fontWeight: '600' },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.white },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.white, flex: 1, textAlign: 'center' },
 
   // Date bar
   dateBar: {
