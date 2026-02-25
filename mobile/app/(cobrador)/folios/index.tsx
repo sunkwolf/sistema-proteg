@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Card, Badge, Input } from '@/components/ui';
 import { colors, spacing, radius } from '@/theme';
-import { formatMoney, formatDateShort } from '@/utils/format';
+import { formatMoney, formatDateShort, formatDateFull } from '@/utils/format';
 import { FolioCard, OverdueLevel } from '@/types';
 
 const borderColors: Record<OverdueLevel, string> = {
@@ -106,6 +106,12 @@ export default function FoliosScreen() {
         </View>
       </View>
 
+      {/* Date section */}
+      <View style={styles.dateSection}>
+        <Text style={styles.dateTitle}>{formatDateFull(new Date().toISOString())}</Text>
+        <Text style={styles.dateSubtitle}>{filtered.length} folios asignados</Text>
+      </View>
+
       <View style={styles.searchBar}>
         <Input
           placeholder="Buscar folio o cliente"
@@ -128,11 +134,6 @@ export default function FoliosScreen() {
             </Text>
           </Pressable>
         ))}
-      </View>
-
-      <View style={styles.sortRow}>
-        <Text style={styles.sortLabel}>ORDENAR</Text>
-        <Text style={styles.countLabel}>{filtered.length} folios asignados</Text>
       </View>
 
       <FlatList
@@ -159,7 +160,14 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: '700', color: colors.white },
   headerRight: { flexDirection: 'row', gap: 16 },
   headerIcon: { fontSize: 20, color: colors.white },
-  searchBar: { paddingHorizontal: 20, paddingTop: 16 },
+  dateSection: {
+    backgroundColor: colors.white,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  dateTitle: { fontSize: 22, fontWeight: '700', color: '#1C1C1E' },
+  dateSubtitle: { fontSize: 13, color: colors.primary, marginTop: 2 },
+  searchBar: { paddingHorizontal: 20, paddingTop: 12 },
   filters: {
     flexDirection: 'row',
     gap: 8,
@@ -171,18 +179,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: radius.full,
   },
-  chipActive: { backgroundColor: colors.textDark },
+  chipActive: { backgroundColor: colors.primary },
   chipInactive: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   chipText: { fontSize: 13, fontWeight: '600', color: colors.textMedium },
-  chipTextActive: { color: colors.white },
-  sortRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 8,
-  },
-  sortLabel: { fontSize: 12, fontWeight: '700', color: colors.primary, letterSpacing: 0.5 },
-  countLabel: { fontSize: 12, color: colors.textMedium },
+  chipTextActive: { color: colors.white, fontWeight: '700' },
   list: { paddingHorizontal: 20, paddingBottom: 100 },
   folioTop: {
     flexDirection: 'row',
