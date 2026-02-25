@@ -7,6 +7,7 @@ import {
   Platform,
   Pressable,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -72,8 +73,13 @@ export default function LoginScreen() {
       <SafeAreaView style={styles.safe}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.content}
+          style={styles.keyboardView}
         >
+          <ScrollView
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
           {/* Logo */}
           <View style={styles.logoArea}>
             <View style={styles.logoCircle}>
@@ -157,6 +163,7 @@ export default function LoginScreen() {
           </View>
 
           <Text style={styles.version}>v0.1.0-dev</Text>
+          </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </LinearGradient>
@@ -166,14 +173,17 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   safe: { flex: 1 },
+  keyboardView: { flex: 1 },
   content: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
+    paddingBottom: 24,
   },
   logoArea: {
     alignItems: 'center',
     marginBottom: 32,
+    paddingTop: 24,
   },
   logoCircle: {
     width: 110,
