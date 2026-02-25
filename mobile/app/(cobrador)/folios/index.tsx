@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Card, Badge, Input } from '@/components/ui';
 import { colors, spacing, radius } from '@/theme';
 import { formatMoney, formatDateShort, formatDateFull } from '@/utils/format';
@@ -99,11 +100,11 @@ export default function FoliosScreen() {
     <SafeAreaView edges={['top']} style={styles.screen}>
       {/* Header */}
       <View style={styles.header}>
+        <Pressable onPress={() => router.replace('/(cobrador)')} style={{ width: 40 }}>
+          <Ionicons name="chevron-back" size={24} color={colors.white} />
+        </Pressable>
         <Text style={styles.headerTitle}>Mis Folios</Text>
-        <View style={styles.headerRight}>
-          <Text style={styles.headerIcon}>🔍</Text>
-          <Text style={styles.headerIcon}>☰</Text>
-        </View>
+        <View style={{ width: 40 }} />
       </View>
 
       {/* Date section */}
@@ -153,13 +154,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: colors.primary,
   },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.white },
-  headerRight: { flexDirection: 'row', gap: 16 },
-  headerIcon: { fontSize: 20, color: colors.white },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.white, textAlign: 'center', flex: 1 },
   dateSection: {
     backgroundColor: colors.white,
     paddingHorizontal: 20,
