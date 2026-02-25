@@ -53,7 +53,6 @@ export default function CobradorLayout() {
       {/* Pantallas modales — ocultas de tabs */}
       <Tabs.Screen name="folios/[folio]" options={{ href: null }} />
       <Tabs.Screen name="cobros/nuevo" options={{ href: null }} />
-      <Tabs.Screen name="cobros/abono" options={{ href: null }} />
       <Tabs.Screen name="avisos/nuevo" options={{ href: null }} />
       <Tabs.Screen name="efectivo" options={{ href: null }} />
       <Tabs.Screen name="notificaciones" options={{ href: null }} />
