@@ -18,7 +18,12 @@ const SCREEN_W = Dimensions.get('window').width;
 // ─── Mock ─────────────────────────────────────────────────────────────────────
 const META_SEMANAL = 50000;
 const COBRADO_SEMANAL = 33600;
-const COMISION_PCT = 0.03; // 3%
+// TODO: Confirmar con Elena el esquema completo:
+// - ¿Qué porcentaje aplica por entrega de pólizas (sin cobro)?
+// - ¿Vendedores con cobertura amplia = 0% ó 50%?
+// - ¿Hay comisiones variables por cuentas atrasadas?
+// Por ahora: 10% confirmado para cobranza normal
+const COMISION_PCT = 0.10; // 10% — confirmado por Fer 25/feb/2026
 
 interface CobradorComision {
   id: string;
@@ -31,9 +36,9 @@ interface CobradorComision {
 }
 
 const COBRADORES: CobradorComision[] = [
-  { id: '1', name: 'Edgar Martínez',  initials: 'EM', color: '#4A3AFF', cobrado: 13200, meta: 15000, comision: 396 },
-  { id: '2', name: 'Laura Jiménez',   initials: 'LJ', color: '#34C759', cobrado: 11400, meta: 12000, comision: 342 },
-  { id: '3', name: 'Carlos Vega',     initials: 'CV', color: '#F5A623', cobrado: 9000,  meta: 13000, comision: 270 },
+  { id: '1', name: 'Edgar Martínez',  initials: 'EM', color: '#4A3AFF', cobrado: 13200, meta: 15000, comision: 1320 },
+  { id: '2', name: 'Laura Jiménez',   initials: 'LJ', color: '#34C759', cobrado: 11400, meta: 12000, comision: 1140 },
+  { id: '3', name: 'Carlos Vega',     initials: 'CV', color: '#F5A623', cobrado: 9000,  meta: 13000, comision: 900 },
   { id: '4', name: 'Sofía Reyes',     initials: 'SR', color: '#FF3B30', cobrado: 0,     meta: 10000, comision: 0 },
 ];
 
