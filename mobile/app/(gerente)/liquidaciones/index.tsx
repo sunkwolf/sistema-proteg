@@ -357,7 +357,7 @@ export default function LiquidacionesScreen() {
   }, []);
   
   const handleCobradorPress = (cobrador: CobradorLiquidacion) => {
-    router.push(`/gerente/liquidaciones/${cobrador.id}`);
+    router.push(`/(gerente)/liquidaciones/${cobrador.id}`);
   };
   
   const handlePayAll = () => {
