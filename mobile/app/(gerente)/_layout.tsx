@@ -51,16 +51,18 @@ export default function GerenteLayout() {
         }}
       />
       <Tabs.Screen
-        name="comisiones"
+        name="liquidaciones"
         options={{
-          title: 'Comisiones',
-          tabBarIcon: ({ color, size }) => <Ionicons name="stats-chart" size={size} color={color} />,
+          title: 'Liquidar',
+          tabBarIcon: ({ color, size }) => <Ionicons name="wallet" size={size} color={color} />,
         }}
       />
 
       {/* Hidden screens */}
       <Tabs.Screen name="propuestas/[id]" options={{ href: null }} />
       <Tabs.Screen name="historial-ruta" options={{ href: null }} />
+      <Tabs.Screen name="comisiones" options={{ href: null }} />
+      <Tabs.Screen name="liquidaciones/[id]" options={{ href: null }} />
     </Tabs>
   );
 }
