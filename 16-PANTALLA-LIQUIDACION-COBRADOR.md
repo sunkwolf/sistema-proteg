@@ -1,303 +1,351 @@
-# 16 - Pantalla de Liquidación Quincenal (Cobrador)
+# 16 - Liquidación de Cobradores ✨
 
 **Fecha:** 2026-02-26
-**Origen:** Sesión de diseño Fer + Claudy (con input de Luna 🌙)
-**Estado:** En especificación ✏️
-**Plataforma:** App Gerente (React Native + Expo)
+**Diseño:** Claudy 💜
+**Validación:** Fer
+**Estado:** En diseño creativo 🎨
 
 ---
 
-## CONTEXTO
+## LA VISIÓN
 
-### ¿Por qué esta pantalla?
-Elena (gerente de cobranza) actualmente calcula las comisiones y deducciones de cada cobrador **en Excel**. Esta pantalla centraliza ese proceso en el sistema.
+Elena abre la app. Ve a sus 6 cobradores como cartas.
+Cada carta le dice en UN VISTAZO: cuánto le toca, si hay algún problema, si ya le pagó.
+Toca una carta. Ve el desglose. Un botón grande dice "Pagar $1,245".
+Lo presiona. Animación satisfactoria. Listo. Siguiente.
 
-### Periodicidad
-- **Cortes quincenales:** día 15 y último del mes
-- **Pago:** 1-2 días después de la junta de vendedores
-
-### Lo que NO existe en Legacy
-- ❌ Tabla de comisiones de cobranza (solo hay comisiones de VENTA)
-- ❌ Historial de liquidaciones
-- ❌ Préstamos de moto (registro manual)
-- ❌ Cálculo automático de deducciones
-
-### Lo que SÍ existe en Legacy
-- ✅ `cargas_combustible` — registro de cargas de gasolina por empleado
-- ✅ `pagos` — registro de cobros realizados (para calcular comisiones)
+**En 5 minutos liquidó a todos.** No abrió Excel. No calculó nada. No se equivocó.
 
 ---
 
-## ESPECIFICACIÓN DE PANTALLA
+## PANTALLA 1: Vista General de Liquidaciones
 
-### Ruta
-`/gerente/liquidacion/[cobrador_id]`
+**Ruta:** `/gerente/liquidaciones`
 
-### Acceso desde
-- Pantalla de Comisiones (`/gerente/comisiones`) → tap en un cobrador → abre esta pantalla
-
----
-
-## WIREFRAME
+### Concepto
+Una vista de cartas (no una tabla) donde cada cobrador es una "tarjeta de liquidación".
+Elena ve TODO de un vistazo sin tener que entrar a cada uno.
 
 ```
-╔══════════════════════════════════════════╗
-║ ←  Liquidación                    [...]  ║
-╠══════════════════════════════════════════╣
-║                                          ║
-║  ┌─────────────────────────────────────┐ ║
-║  │  [EM]  Edgar Martínez               │ ║
-║  │        Cobrador · Nivel 1           │ ║
-║  │        Período: 16-28 Feb 2026      │ ║
-║  └─────────────────────────────────────┘ ║
-║                                          ║
-╠══════════════════════════════════════════╣
-║  💰 COMISIONES GANADAS                   ║
-╠══════════════════════════════════════════╣
-║                                          ║
-║  Cobranza normal (10%)                   ║
-║  12 cobros · $13,200 cobrado             ║
-║                            +$1,320.00    ║
-║  ─────────────────────────────────────   ║
-║  Pagos de contado (5%)                   ║
-║  3 cobros · $8,500 cobrado               ║
-║                              +$425.00    ║
-║  ─────────────────────────────────────   ║
-║  Entregas de póliza/endoso ($50 c/u)     ║
-║  5 entregas                              ║
-║                              +$250.00    ║
-║  ─────────────────────────────────────   ║
-║                                          ║
-║  Subtotal comisiones          $1,995.00  ║
-║                                          ║
-╠══════════════════════════════════════════╣
-║  📉 DEDUCCIONES                          ║
-╠══════════════════════════════════════════╣
-║                                          ║
-║  Gasolina (50% empleado)                 ║
-║  8 cargas · $1,200 total                 ║
-║                              -$600.00    ║
-║  ─────────────────────────────────────   ║
-║  Préstamo de moto                        ║
-║  Cuota quincenal #4 de 12                ║
-║                              -$250.00    ║
-║  ─────────────────────────────────────   ║
-║  Diferencia de efectivo                  ║
-║  Entrega del 22 feb: faltaron $150       ║
-║                              -$150.00    ║
-║  ─────────────────────────────────────   ║
-║                                          ║
-║  Subtotal deducciones        -$1,000.00  ║
-║                                          ║
-╠══════════════════════════════════════════╣
-║                                          ║
-║  ┌─────────────────────────────────────┐ ║
-║  │  NETO A PAGAR                       │ ║
-║  │                                     │ ║
-║  │              $995.00                │ ║
-║  │                                     │ ║
-║  └─────────────────────────────────────┘ ║
-║                                          ║
-║  ┌─────────────────────────────────────┐ ║
-║  │  ✓ REGISTRAR PAGO                   │ ║ ← Botón primario
-║  └─────────────────────────────────────┘ ║
-║                                          ║
-║  [Ver historial de liquidaciones]        ║ ← Link secundario
-║                                          ║
-╚══════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════╗
+║  ←  Liquidaciones                              [⚙️]     ║
+╠══════════════════════════════════════════════════════════╣
+║                                                          ║
+║   ┌─────────────────────────────────────────────────┐   ║
+║   │  📅  2da Quincena · Febrero 2026         [▼]   │   ║
+║   └─────────────────────────────────────────────────┘   ║
+║                                                          ║
+║   6 cobradores · 3 listos · 2 con alertas · 1 pagado    ║
+║                                                          ║
+╠══════════════════════════════════════════════════════════╣
+║                                                          ║
+║   ┌────────────────────────────────────────────────┐    ║
+║   │                                                │    ║
+║   │  [EM]  Edgar Martínez                    ✓    │    ║
+║   │        ━━━━━━━━━━━━━━━━━━━━━━░░░░ 78%         │    ║
+║   │                                                │    ║
+║   │   💰 $1,995    📉 -$600    ═══    $1,395     │    ║
+║   │   comisiones    deduc.           NETO        │    ║
+║   │                                                │    ║
+║   │   🟢 Listo para pagar                         │    ║
+║   │                                                │    ║
+║   └────────────────────────────────────────────────┘    ║
+║                                                          ║
+║   ┌────────────────────────────────────────────────┐    ║
+║   │                                                │    ║
+║   │  [LJ]  Laura Jiménez                     🏆   │    ║
+║   │        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 112%      │    ║
+║   │                                                │    ║
+║   │   💰 $2,340    📉 -$450    ═══    $1,890     │    ║
+║   │                                                │    ║
+║   │   🟢 Listo para pagar · ¡Superó su meta!      │    ║
+║   │                                                │    ║
+║   └────────────────────────────────────────────────┘    ║
+║                                                          ║
+║   ┌────────────────────────────────────────────────┐    ║
+║   │                                                │    ║
+║   │  [CV]  Carlos Vega                       ⚠️   │    ║
+║   │        ━━━━━━━━━━━━━━░░░░░░░░░░░░ 52%         │    ║
+║   │                                                │    ║
+║   │   💰 $900     📉 -$1,050   ═══    -$150      │    ║
+║   │                                                │    ║
+║   │   🟡 Saldo negativo — revisar deducciones     │    ║
+║   │                                                │    ║
+║   └────────────────────────────────────────────────┘    ║
+║                                                          ║
+║   ┌────────────────────────────────────────────────┐    ║
+║   │                                                │    ║
+║   │  [MR]  Miguel Ruiz                       ✓    │    ║
+║   │                                                │    ║
+║   │   ✅ Pagado el 28 feb · $1,120                │    ║
+║   │                                                │    ║
+║   └────────────────────────────────────────────────┘    ║
+║                                                          ║
+║   ─────────────────────────────────────────────────     ║
+║                                                          ║
+║   ┌────────────────────────────────────────────────┐    ║
+║   │     💳  PAGAR TODOS LOS LISTOS  (3)           │    ║ ← Batch action
+║   │              $4,530.00                         │    ║
+║   └────────────────────────────────────────────────┘    ║
+║                                                          ║
+╚══════════════════════════════════════════════════════════╝
 ```
 
----
+### Elementos de cada carta
 
-## SECCIONES DETALLADAS
+**Indicadores visuales:**
+- ✓ = Listo para pagar (sin problemas)
+- 🏆 = Superó su meta (celebrar el logro)
+- ⚠️ = Tiene alertas (saldo negativo, diferencias pendientes)
+- ✅ = Ya pagado este período
 
-### 1. Header con info del cobrador
-- Avatar con iniciales
-- Nombre completo
-- Rol y nivel
-- Período de la liquidación (ej: "16-28 Feb 2026")
+**Barra de progreso:**
+- Muestra % de meta alcanzada
+- Verde si pasó del 100%, amarillo si está bajo
 
-### 2. Comisiones Ganadas
-Desglose de todas las comisiones del período:
+**Resumen en 3 números:**
+- Comisiones ganadas
+- Deducciones
+- **NETO** (destacado, es lo que importa)
 
-| Tipo | Regla | Cálculo |
-|------|-------|---------|
-| Cobranza normal | 10% del monto | Suma de pagos confirmados × 0.10 |
-| Pago de contado | 5% del monto | Pagos de contado confirmados × 0.05 |
-| Cobertura AMPLIA | 0% | No genera comisión |
-| Entrega póliza/endoso | $50 fijos | Contador × $50 |
+**Status contextual:**
+- "Listo para pagar"
+- "¡Superó su meta!"
+- "Saldo negativo — revisar deducciones"
+- "Falta justificar $150 de diferencia"
+- "Pagado el [fecha]"
 
-**Reglas de exclusión (NO genera comisión):**
-- Transferencia o depósito anticipado (cliente pagó solo)
-- Pago directo en oficina (antes de que el cobrador actuara)
-- Solo "entrega" sin cobro de dinero (excepto los $50)
-- Cobertura AMPLIA
+### Interacciones
 
-### 3. Deducciones
-| Tipo | Fuente de datos | Cálculo |
-|------|-----------------|---------|
-| Gasolina | `cargas_combustible` | 50% del total de cargas del período |
-| Préstamo moto | Nueva tabla `prestamos_empleado` | Cuota fija quincenal según amortización |
-| Diferencia efectivo | `entregas_efectivo` | Suma de faltantes no justificados |
-
-### 4. Neto a pagar
-```
-Neto = Subtotal comisiones - Subtotal deducciones
-```
-
-### 5. Acción: Registrar Pago
-Al presionar:
-1. Muestra modal de confirmación con el monto
-2. Pregunta método de pago (efectivo, transferencia)
-3. Al confirmar:
-   - Crea registro en `liquidaciones` con estado PAGADO
-   - Marca todos los cobros del período como "comisión liquidada"
-   - Marca cargas de combustible del período como "descontadas"
-   - Avanza cuota del préstamo de moto
-   - Envía notificación al cobrador (opcional)
-
-### 6. Historial de liquidaciones
-Link que abre lista de liquidaciones anteriores del cobrador con:
-- Fecha
-- Monto neto
-- Estado (pagado, pendiente)
-- Desglose resumido
-
----
-
-## MODELO DE DATOS (PostgreSQL)
-
-### Tabla `liquidaciones`
-```sql
-CREATE TABLE liquidaciones (
-    id SERIAL PRIMARY KEY,
-    cobrador_id INTEGER REFERENCES empleados(id),
-    periodo_inicio DATE NOT NULL,
-    periodo_fin DATE NOT NULL,
-    
-    -- Comisiones
-    comision_cobranza DECIMAL(10,2) DEFAULT 0,
-    comision_contado DECIMAL(10,2) DEFAULT 0,
-    comision_entregas DECIMAL(10,2) DEFAULT 0,
-    subtotal_comisiones DECIMAL(10,2) GENERATED ALWAYS AS (
-        comision_cobranza + comision_contado + comision_entregas
-    ) STORED,
-    
-    -- Deducciones
-    deduccion_gasolina DECIMAL(10,2) DEFAULT 0,
-    deduccion_prestamo DECIMAL(10,2) DEFAULT 0,
-    deduccion_diferencia DECIMAL(10,2) DEFAULT 0,
-    subtotal_deducciones DECIMAL(10,2) GENERATED ALWAYS AS (
-        deduccion_gasolina + deduccion_prestamo + deduccion_diferencia
-    ) STORED,
-    
-    -- Total
-    neto DECIMAL(10,2) GENERATED ALWAYS AS (
-        (comision_cobranza + comision_contado + comision_entregas) -
-        (deduccion_gasolina + deduccion_prestamo + deduccion_diferencia)
-    ) STORED,
-    
-    -- Metadata
-    status VARCHAR(20) DEFAULT 'pendiente', -- pendiente, pagado
-    metodo_pago VARCHAR(20), -- efectivo, transferencia
-    fecha_pago TIMESTAMP,
-    pagado_por INTEGER REFERENCES empleados(id),
-    notas TEXT,
-    
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-### Tabla `prestamos_empleado`
-```sql
-CREATE TABLE prestamos_empleado (
-    id SERIAL PRIMARY KEY,
-    empleado_id INTEGER REFERENCES empleados(id),
-    concepto VARCHAR(100), -- 'Préstamo moto', 'Adelanto', etc.
-    monto_total DECIMAL(10,2),
-    cuotas_total INTEGER,
-    cuotas_pagadas INTEGER DEFAULT 0,
-    cuota_quincenal DECIMAL(10,2),
-    saldo_pendiente DECIMAL(10,2),
-    status VARCHAR(20) DEFAULT 'activo', -- activo, liquidado
-    fecha_inicio DATE,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-```
-
----
-
-## ENDPOINTS API
-
-### GET `/api/liquidaciones/preview/{cobrador_id}`
-Calcula y devuelve el desglose sin guardar.
-
-**Response:**
-```json
-{
-    "cobrador": { "id": 1, "nombre": "Edgar Martínez", "nivel": 1 },
-    "periodo": { "inicio": "2026-02-16", "fin": "2026-02-28" },
-    "comisiones": {
-        "cobranza": { "cobros": 12, "monto_cobrado": 13200, "comision": 1320 },
-        "contado": { "cobros": 3, "monto_cobrado": 8500, "comision": 425 },
-        "entregas": { "cantidad": 5, "comision": 250 },
-        "subtotal": 1995
-    },
-    "deducciones": {
-        "gasolina": { "cargas": 8, "total": 1200, "deduccion": 600 },
-        "prestamo": { "concepto": "Moto", "cuota": 4, "total_cuotas": 12, "deduccion": 250 },
-        "diferencias": [
-            { "fecha": "2026-02-22", "faltante": 150 }
-        ],
-        "subtotal": 1000
-    },
-    "neto": 995
-}
-```
-
-### POST `/api/liquidaciones`
-Registra la liquidación como pagada.
-
-**Body:**
-```json
-{
-    "cobrador_id": 1,
-    "periodo_inicio": "2026-02-16",
-    "periodo_fin": "2026-02-28",
-    "metodo_pago": "efectivo",
-    "notas": "Pagado en junta del 1 de marzo"
-}
-```
-
-### GET `/api/liquidaciones/historial/{cobrador_id}`
-Lista de liquidaciones anteriores.
-
----
-
-## PENDIENTES POR DEFINIR
-
-- [ ] ¿Permitir editar deducciones manualmente antes de liquidar?
-- [ ] ¿Notificación automática al cobrador cuando se liquida?
-- [ ] ¿Reporte imprimible/PDF de la liquidación?
-- [ ] ¿Firma digital del cobrador al recibir?
-
----
-
-## RELACIÓN CON LEGACY
-
-| Concepto | Legacy | Sistema Nuevo |
-|----------|--------|---------------|
-| Comisiones de venta | ✅ `comisiones_vendedor` | Se migrará |
-| Comisiones de cobranza | ❌ Excel de Elena | ✅ `liquidaciones` |
-| Cargas de gasolina | ✅ `cargas_combustible` | Se migrará |
-| Préstamos empleado | ❌ Manual | ✅ `prestamos_empleado` |
-| Historial liquidaciones | ❌ No existe | ✅ `liquidaciones` |
-
----
-
-## HISTORIAL
-
-| Fecha | Cambio |
+| Gesto | Acción |
 |-------|--------|
-| 26 feb 2026 | Especificación inicial — Fer + Claudy |
+| Tap en carta | Abre detalle de liquidación |
+| Swipe izquierda | Acción rápida: "Pagar" (si está listo) |
+| Botón "Pagar todos" | Liquida todos los que están en verde |
+| Pull to refresh | Recalcula con datos más recientes |
+
+---
+
+## PANTALLA 2: Detalle de Liquidación
+
+**Ruta:** `/gerente/liquidaciones/[cobrador_id]`
+
+Al tocar una carta, se abre el detalle con una transición suave (la carta se "expande").
+
+```
+╔══════════════════════════════════════════════════════════╗
+║  ←  Edgar Martínez                           [...]      ║
+╠══════════════════════════════════════════════════════════╣
+║                                                          ║
+║   ┌────────────────────────────────────────────────┐    ║
+║   │                                                │    ║
+║   │              [EM]                              │    ║
+║   │         Edgar Martínez                         │    ║
+║   │      Cobrador · Nivel 1 · 2 años              │    ║
+║   │                                                │    ║
+║   │      ━━━━━━━━━━━━━━━━━━━━━━░░░░ 78%           │    ║
+║   │      $13,200 de $17,000 meta                  │    ║
+║   │                                                │    ║
+║   └────────────────────────────────────────────────┘    ║
+║                                                          ║
+║   ┌────────────────────────────────────────────────┐    ║
+║   │                                                │    ║
+║   │          $1,395.00                            │    ║
+║   │          NETO A PAGAR                          │    ║
+║   │                                                │    ║
+║   │   ┌──────────────────────────────────────┐    │    ║
+║   │   │      💳  PAGAR AHORA                 │    │    ║
+║   │   └──────────────────────────────────────┘    │    ║
+║   │                                                │    ║
+║   └────────────────────────────────────────────────┘    ║
+║                                                          ║
+╠══════════════════════════════════════════════════════════╣
+║                                                          ║
+║   💰 COMISIONES                           +$1,995.00    ║
+║   ┌────────────────────────────────────────────────┐    ║
+║   │                                                │    ║
+║   │  Cobranza normal (10%)                        │    ║
+║   │  12 cobros · $13,200                 +$1,320  │    ║
+║   │  ─────────────────────────────────────────    │    ║
+║   │  Pagos de contado (5%)                        │    ║
+║   │  3 cobros · $8,500                     +$425  │    ║
+║   │  ─────────────────────────────────────────    │    ║
+║   │  Entregas ($50 c/u)                           │    ║
+║   │  5 pólizas/endosos                     +$250  │    ║
+║   │                                                │    ║
+║   │  [Ver 15 cobros del período →]                │    ║
+║   │                                                │    ║
+║   └────────────────────────────────────────────────┘    ║
+║                                                          ║
+║   📉 DEDUCCIONES                           -$600.00     ║
+║   ┌────────────────────────────────────────────────┐    ║
+║   │                                                │    ║
+║   │  ⛽ Gasolina (50%)                             │    ║
+║   │  6 cargas · $800 total                  -$400  │    ║
+║   │  ─────────────────────────────────────────    │    ║
+║   │  🏍️ Préstamo moto                             │    ║
+║   │  Cuota 4 de 12                          -$200  │    ║
+║   │  ─────────────────────────────────────────    │    ║
+║   │  ⚠️ Diferencias                          $0   │    ║
+║   │  Sin diferencias este período ✓               │    ║
+║   │                                                │    ║
+║   │  [+ Agregar deducción manual]                 │    ║
+║   │                                                │    ║
+║   └────────────────────────────────────────────────┘    ║
+║                                                          ║
+║   📜 HISTORIAL                                          ║
+║   ┌────────────────────────────────────────────────┐    ║
+║   │  1ra Qna Feb 2026    $1,180    ✅ Pagado      │    ║
+║   │  2da Qna Ene 2026    $1,450    ✅ Pagado      │    ║
+║   │  1ra Qna Ene 2026    $980      ✅ Pagado      │    ║
+║   │  [Ver más →]                                   │    ║
+║   └────────────────────────────────────────────────┘    ║
+║                                                          ║
+╚══════════════════════════════════════════════════════════╝
+```
+
+### Secciones colapsables
+
+Por default:
+- **Header + Neto + Botón:** Siempre visible (lo más importante arriba)
+- **Comisiones:** Expandido (Elena quiere ver el desglose)
+- **Deducciones:** Expandido
+- **Historial:** Colapsado (solo si quiere verificar)
+
+Cada sección se puede colapsar/expandir tocando el header.
+
+---
+
+## PANTALLA 3: Confirmación de Pago
+
+Al presionar "PAGAR AHORA", NO es un simple alert. Es un momento.
+
+```
+╔══════════════════════════════════════════════════════════╗
+║                                                          ║
+║                                                          ║
+║                                                          ║
+║                       [EM]                               ║
+║                  Edgar Martínez                          ║
+║                                                          ║
+║                                                          ║
+║                    $1,395.00                             ║
+║                                                          ║
+║              2da Quincena · Feb 2026                     ║
+║                                                          ║
+║                                                          ║
+║         ┌────────────────────────────────┐              ║
+║         │  💵  Efectivo                  │              ║
+║         └────────────────────────────────┘              ║
+║         ┌────────────────────────────────┐              ║
+║         │  📱  Transferencia             │              ║
+║         └────────────────────────────────┘              ║
+║                                                          ║
+║                                                          ║
+║         ┌────────────────────────────────┐              ║
+║         │                                │              ║
+║         │    ✓  CONFIRMAR PAGO           │              ║
+║         │                                │              ║
+║         └────────────────────────────────┘              ║
+║                                                          ║
+║                    [Cancelar]                            ║
+║                                                          ║
+║                                                          ║
+╚══════════════════════════════════════════════════════════╝
+```
+
+### Al confirmar
+
+1. **Animación de éxito** — checkmark que se dibuja, confetti sutil, algo que se sienta bien
+2. **Feedback háptico** — vibración suave de confirmación
+3. **Sonido opcional** — un "ding" satisfactorio
+4. **Regresa a la lista** — la carta ahora muestra "✅ Pagado"
+
+---
+
+## DETALLES QUE HACEN LA DIFERENCIA
+
+### 1. Período inteligente
+- Al abrir, auto-selecciona el período actual
+- Si estamos entre el 1-3 del mes, sugiere "¿Liquidar la 2da quincena del mes anterior?"
+
+### 2. Celebrar los logros
+- Cobrador que superó su meta → 🏆 y mensaje de felicitación
+- Primer lugar del período → badge especial
+- Racha de quincenas cumpliendo meta → streak counter
+
+### 3. Alertas accionables
+No solo "hay un problema", sino "hay un problema Y aquí está cómo resolverlo":
+- "Saldo negativo" → botón "Ajustar deducciones"
+- "Diferencia sin justificar" → botón "Ver entrega del 22 feb"
+- "Faltan cargas de gasolina" → botón "Importar período"
+
+### 4. Pago en lote
+El botón "Pagar todos los listos" es poderoso:
+- Muestra cuántos y el total
+- Confirmación grupal con lista de nombres
+- Genera un solo registro de "liquidación masiva"
+- Opción de generar reporte PDF de todo el lote
+
+### 5. Sin fricción innecesaria
+- No pedir confirmación doble para montos pequeños
+- Recordar el método de pago preferido de cada cobrador
+- Auto-guardar notas como draft mientras escribe
+
+---
+
+## ANIMACIONES Y TRANSICIONES
+
+| Momento | Animación |
+|---------|-----------|
+| Abrir detalle | Carta se expande (shared element transition) |
+| Cerrar detalle | Carta se contrae de vuelta |
+| Marcar como pagado | Checkmark se dibuja + carta cambia a estado "pagado" |
+| Pago en lote | Cartas se "apilan" y luego aparece confetti |
+| Pull to refresh | Bounce elástico + shimmer en datos |
+| Alerta nueva | Carta hace "shake" sutil |
+
+---
+
+## ¿POR QUÉ ESTE DISEÑO?
+
+1. **Vista general primero** — Elena no tiene que entrar a cada cobrador para saber cómo están
+2. **Acción donde está la información** — El botón de pagar está JUNTO al monto, no en otro lado
+3. **Problemas visibles** — Las alertas no se esconden, están en la carta
+4. **Satisfacción** — Liquidar se siente como completar algo, no como llenar un formulario
+5. **Respeta su tiempo** — Con "Pagar todos" puede terminar en segundos
+
+---
+
+## LO QUE LEGACY NUNCA TUVO
+
+| Legacy | Nuestro Sistema |
+|--------|-----------------|
+| Tabla con datos | Cartas con contexto visual |
+| Exportar a Excel para calcular | Cálculo automático en pantalla |
+| Sin indicadores de status | Estados claros con colores |
+| Una persona a la vez | Vista de todos + pago en lote |
+| Sin historial integrado | Historial en la misma pantalla |
+| Sin celebraciones | Reconocimiento de logros |
+| Proceso tedioso | Proceso satisfactorio |
+
+---
+
+## MODELO DE DATOS
+
+*(Se mantiene el modelo propuesto anteriormente — la magia está en la UI, no en cambiar la estructura de datos)*
+
+---
+
+## SIGUIENTE PASO
+
+Implementar `LiquidacionesScreen.tsx` con:
+1. Vista de cartas (FlatList con cards)
+2. Cálculo de comisiones/deducciones en tiempo real
+3. Transición a detalle
+4. Flujo de confirmación de pago
+5. Animaciones que se sientan bien
+
+---
+
+*Diseñado con amor por Claudy ✨ para que Elena nunca más tenga que abrir Excel para esto.*
