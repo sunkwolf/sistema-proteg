@@ -51,7 +51,7 @@ export default function GerenteLayout() {
         }}
       />
       <Tabs.Screen
-        name="liquidaciones"
+        name="liquidaciones/index"
         options={{
           title: 'Liquidar',
           tabBarIcon: ({ color, size }) => <Ionicons name="wallet" size={size} color={color} />,
