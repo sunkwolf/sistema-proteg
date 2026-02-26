@@ -14,6 +14,8 @@ import {
   Pressable,
   RefreshControl,
   Animated,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -334,6 +336,369 @@ function CobradorCard({ item, onPress }: { item: CobradorLiquidacion; onPress: (
   );
 }
 
+// ─── Pay All Modal ────────────────────────────────────────────────────────────
+
+function PayAllModal({
+  visible,
+  onClose,
+  onConfirm,
+  cobradores,
+  total,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onConfirm: (method: string) => void;
+  cobradores: CobradorLiquidacion[];
+  total: number;
+}) {
+  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleConfirm = () => {
+    if (!selectedMethod) return;
+    setConfirming(true);
+
+    setTimeout(() => {
+      setSuccess(true);
+      setTimeout(() => {
+        onConfirm(selectedMethod);
+        // Reset state
+        setSuccess(false);
+        setConfirming(false);
+        setSelectedMethod(null);
+      }, 2000);
+    }, 500);
+  };
+
+  const handleClose = () => {
+    setSelectedMethod(null);
+    setSuccess(false);
+    setConfirming(false);
+    onClose();
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={handleClose}
+    >
+      <View style={modalStyles.overlay}>
+        <View style={modalStyles.content}>
+          {success ? (
+            // ─── Success State ───
+            <View style={modalStyles.successContainer}>
+              <View style={modalStyles.successIcon}>
+                <Ionicons name="checkmark" size={48} color={colors.white} />
+              </View>
+              <Text style={modalStyles.successTitle}>¡Pagos registrados!</Text>
+              <Text style={modalStyles.successSubtitle}>
+                {cobradores.length} cobradores · {formatMoney(total)}
+              </Text>
+              <View style={modalStyles.successList}>
+                {cobradores.map((c) => (
+                  <Text key={c.id} style={modalStyles.successName}>
+                    ✓ {c.nombre}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          ) : (
+            // ─── Selection State ───
+            <>
+              <View style={modalStyles.header}>
+                <Ionicons name="wallet" size={32} color={colors.primary} />
+                <Text style={modalStyles.title}>Pagar a todos los listos</Text>
+              </View>
+
+              <Text style={modalStyles.amount}>{formatMoney(total)}</Text>
+              <Text style={modalStyles.periodo}>2da Quincena · Feb 2026</Text>
+
+              {/* Lista de cobradores */}
+              <View style={modalStyles.cobradoresList}>
+                <Text style={modalStyles.listTitle}>
+                  {cobradores.length} COBRADORES
+                </Text>
+                <ScrollView style={modalStyles.listScroll} nestedScrollEnabled>
+                  {cobradores.map((c) => (
+                    <View key={c.id} style={modalStyles.cobradorRow}>
+                      <View style={[modalStyles.miniAvatar, { backgroundColor: c.avatarColor }]}>
+                        <Text style={modalStyles.miniAvatarText}>{c.initials}</Text>
+                      </View>
+                      <Text style={modalStyles.cobradorName}>{c.nombre}</Text>
+                      <Text style={modalStyles.cobradorNeto}>{formatMoney(c.neto)}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* Método de pago */}
+              <Text style={modalStyles.methodLabel}>MÉTODO DE PAGO</Text>
+              <View style={modalStyles.methodsContainer}>
+                <Pressable
+                  style={[
+                    modalStyles.methodButton,
+                    selectedMethod === 'efectivo' && modalStyles.methodSelected,
+                  ]}
+                  onPress={() => setSelectedMethod('efectivo')}
+                >
+                  <Ionicons
+                    name="cash-outline"
+                    size={22}
+                    color={selectedMethod === 'efectivo' ? colors.primary : colors.textMedium}
+                  />
+                  <Text
+                    style={[
+                      modalStyles.methodText,
+                      selectedMethod === 'efectivo' && modalStyles.methodTextSelected,
+                    ]}
+                  >
+                    Efectivo
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    modalStyles.methodButton,
+                    selectedMethod === 'transferencia' && modalStyles.methodSelected,
+                  ]}
+                  onPress={() => setSelectedMethod('transferencia')}
+                >
+                  <Ionicons
+                    name="phone-portrait-outline"
+                    size={22}
+                    color={selectedMethod === 'transferencia' ? colors.primary : colors.textMedium}
+                  />
+                  <Text
+                    style={[
+                      modalStyles.methodText,
+                      selectedMethod === 'transferencia' && modalStyles.methodTextSelected,
+                    ]}
+                  >
+                    Transferencia
+                  </Text>
+                </Pressable>
+              </View>
+
+              {/* Botones */}
+              <Pressable
+                style={[
+                  modalStyles.confirmButton,
+                  !selectedMethod && modalStyles.confirmButtonDisabled,
+                ]}
+                onPress={handleConfirm}
+                disabled={!selectedMethod || confirming}
+              >
+                {confirming ? (
+                  <Text style={modalStyles.confirmButtonText}>Procesando...</Text>
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={20} color={colors.white} />
+                    <Text style={modalStyles.confirmButtonText}>
+                      CONFIRMAR {cobradores.length} PAGOS
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+
+              <Pressable style={modalStyles.cancelButton} onPress={handleClose}>
+                <Text style={modalStyles.cancelButtonText}>Cancelar</Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── Modal Styles ─────────────────────────────────────────────────────────────
+
+const modalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  content: {
+    backgroundColor: colors.white,
+    borderRadius: radius.xl,
+    padding: spacing['2xl'],
+    width: '100%',
+    maxWidth: 360,
+    maxHeight: '85%',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textDark,
+    marginTop: spacing.sm,
+  },
+  amount: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: colors.primary,
+    textAlign: 'center',
+  },
+  periodo: {
+    fontSize: 13,
+    color: colors.textMedium,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  cobradoresList: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  listTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.textMedium,
+    letterSpacing: 0.5,
+    marginBottom: spacing.sm,
+  },
+  listScroll: {
+    maxHeight: 150,
+  },
+  cobradorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  miniAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  miniAvatarText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  cobradorName: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.textDark,
+    marginLeft: spacing.sm,
+  },
+  cobradorNeto: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  methodLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.textMedium,
+    letterSpacing: 0.5,
+    marginBottom: spacing.sm,
+  },
+  methodsContainer: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  methodButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 2,
+    borderColor: colors.border,
+    gap: spacing.xs,
+  },
+  methodSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryBg,
+  },
+  methodText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textMedium,
+  },
+  methodTextSelected: {
+    color: colors.primary,
+  },
+  confirmButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.lg,
+    borderRadius: radius.md,
+    gap: spacing.sm,
+  },
+  confirmButtonDisabled: {
+    backgroundColor: colors.textMedium,
+    opacity: 0.5,
+  },
+  confirmButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  cancelButton: {
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    color: colors.textMedium,
+    fontWeight: '500',
+  },
+  // Success state
+  successContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+  },
+  successIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.success,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  successTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.textDark,
+    marginBottom: spacing.sm,
+  },
+  successSubtitle: {
+    fontSize: 14,
+    color: colors.textMedium,
+    marginBottom: spacing.lg,
+  },
+  successList: {
+    alignItems: 'center',
+  },
+  successName: {
+    fontSize: 13,
+    color: colors.success,
+    fontWeight: '500',
+    marginVertical: 2,
+  },
+});
+
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function LiquidacionesScreen() {
@@ -341,9 +706,11 @@ export default function LiquidacionesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [periodo, setPeriodo] = useState(PERIODO_ACTUAL);
   const [cobradores, setCobradores] = useState(COBRADORES_MOCK);
+  const [showPayAllModal, setShowPayAllModal] = useState(false);
   
   // Calcular resumen
-  const listos = cobradores.filter(c => c.status === 'ready').length;
+  const cobradoresListos = cobradores.filter(c => c.status === 'ready');
+  const listos = cobradoresListos.length;
   const conAlertas = cobradores.filter(c => c.status === 'alert' || c.status === 'negative').length;
   const pagados = cobradores.filter(c => c.status === 'paid').length;
   const totalListos = cobradores
@@ -361,8 +728,20 @@ export default function LiquidacionesScreen() {
   };
   
   const handlePayAll = () => {
-    // TODO: Implementar pago masivo
-    console.log('Pagar todos los listos');
+    setShowPayAllModal(true);
+  };
+  
+  const handlePayAllConfirm = (method: string) => {
+    // Marcar todos los listos como pagados
+    const hoy = new Date();
+    const fechaPago = `${hoy.getDate()} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][hoy.getMonth()]}`;
+    
+    setCobradores(prev => prev.map(c => 
+      c.status === 'ready' 
+        ? { ...c, status: 'paid' as LiquidacionStatus, fechaPago, statusMessage: `Pagado el ${fechaPago}` }
+        : c
+    ));
+    setShowPayAllModal(false);
   };
   
   return (
@@ -432,6 +811,15 @@ export default function LiquidacionesScreen() {
           </Pressable>
         </View>
       )}
+      
+      {/* Pay All Modal */}
+      <PayAllModal
+        visible={showPayAllModal}
+        onClose={() => setShowPayAllModal(false)}
+        onConfirm={handlePayAllConfirm}
+        cobradores={cobradoresListos}
+        total={totalListos}
+      />
     </SafeAreaView>
   );
 }
