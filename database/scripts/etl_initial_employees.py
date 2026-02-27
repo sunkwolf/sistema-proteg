@@ -16,7 +16,7 @@ from sqlalchemy.orm import sessionmaker
 from passlib.hash import argon2
 
 # Configuración (Ajustada para ejecución directa en el VPS)
-DATABASE_URL = "postgresql+asyncpg://protegrt:protegrt@localhost:5433/protegrt_db"
+DATABASE_URL = "postgresql+asyncpg://protegrt:Pr0tegrt_2026!@localhost:5432/sistema_proteg"
 
 async def run_etl():
     engine = create_async_engine(DATABASE_URL, echo=True)
