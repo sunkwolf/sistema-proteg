@@ -16,7 +16,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/auth';
 import * as authApi from '@/api/auth';
-import { loginSchema, LoginForm } from '@/schemas/collections';
+import { loginSchema, LoginForm } from '@/src/schemas/collections';
 import { Input, Button } from '@/components/ui';
 import { Image } from 'react-native';
 import { colors, spacing } from '@/theme';
