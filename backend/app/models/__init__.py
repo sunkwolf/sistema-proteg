@@ -6,6 +6,8 @@ Export all models for easy imports.
 
 from .base import Base, TimestampMixin
 
+from .user import AppUser
+
 from .employee import (
     Employee,
     EmployeeRole,
@@ -57,6 +59,8 @@ __all__ = [
     "SettlementDeduction",
     "SettlementPayment",
     "EmployeeLoan",
+    # User
+    "AppUser",
     # Settlement Enums
     "SettlementStatus",
     "SettlementMethod",
