@@ -46,9 +46,11 @@ def _include_routers(app: FastAPI):
 
     from app.modules.auth.router import router as auth_router
     from app.modules.settlements.router import router as settlements_router
+    from app.modules.employees.router import router as employees_router
 
     app.include_router(auth_router, prefix=f"{prefix}/auth", tags=["Auth"])
     app.include_router(settlements_router, prefix=prefix)
+    app.include_router(employees_router, prefix=prefix)
 
     # Additional routers will be added as modules are developed:
     # from app.modules.employees.router import router as employees_router
