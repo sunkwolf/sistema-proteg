@@ -79,8 +79,8 @@ interface Periodo {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = [
-  '#4A3AFF', '#34C759', '#FF6B35', '#8E44AD',
-  '#E91E63', '#00BCD4', '#FF9500', '#5856D6',
+  '#6D28D9', '#D97706', '#4F46E5', '#059669',
+  '#DC2626', '#2563EB', '#7C3AED', '#DB2777',
 ];
 
 const MONTHS_ES = [
@@ -95,7 +95,24 @@ function getCurrentPeriod(): Periodo {
   const year = now.getFullYear();
   const mm = String(month).padStart(2, '0');
 
-  if (day <= 15) {
+  if (day <= 5) {
+    // Si es muy temprano en el mes (1-5), mostrar 2da quincena del mes anterior
+    const lastMonthDate = new Date(year, month - 2, 1);
+    const lm = lastMonthDate.getMonth() + 1;
+    const ly = lastMonthDate.getFullYear();
+    const lmm = String(lm).padStart(2, '0');
+    const lastDay = new Date(ly, lm, 0).getDate();
+    return {
+      label: `2da Quincena · ${MONTHS_ES[lm - 1]} ${ly}`,
+      quincena: '2da',
+      mes: lm,
+      anio: ly,
+      start: `${ly}-${lmm}-16`,
+      end: `${ly}-${lmm}-${lastDay}`,
+    };
+  }
+
+  if (day <= 20) {
     return {
       label: `1ra Quincena · ${MONTHS_ES[month - 1]} ${year}`,
       quincena: '1ra',
@@ -359,10 +376,11 @@ function PayAllModal({
               <View style={modalStyles.successIcon}>
                 <Ionicons name="checkmark" size={48} color={colors.white} />
               </View>
-              <Text style={modalStyles.successTitle}>¡Pagos registrados!</Text>
+              <Text style={modalStyles.successTitle}>¡Misión Cumplida! ✨</Text>
               <Text style={modalStyles.successSubtitle}>
-                {cobradores.length} cobradores · {formatMoney(total)}
+                {cobradores.length} liquidaciones registradas · {formatMoney(total)}
               </Text>
+              <Text style={modalStyles.successCaption}>Elena, el equipo te lo agradece. 💜</Text>
               <View style={modalStyles.successList}>
                 {cobradores.map((c) => (
                   <Text key={c.id} style={modalStyles.successName}>
@@ -644,11 +662,17 @@ const modalStyles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: colors.textDark,
-    marginBottom: spacing.sm,
+    marginBottom: 4,
   },
   successSubtitle: {
     fontSize: 14,
     color: colors.textMedium,
+    marginBottom: 2,
+  },
+  successCaption: {
+    fontSize: 12,
+    color: colors.primary,
+    fontStyle: 'italic',
     marginBottom: spacing.lg,
   },
   successList: {
