@@ -1,11 +1,14 @@
 /**
  * Detalle de Liquidación - Vista individual de un cobrador
- * 
+ *
  * Diseño: Claudy ✨
  * Desglose completo + botón de pago que se siente bien.
+ * Conectado a la API real el 2026-02-27.
+ *
+ * El parámetro `id` de la URL es employee_role_id.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,7 +16,7 @@ import {
   ScrollView,
   Pressable,
   Modal,
-  Animated,
+  ActivityIndicator,
   TextInput,
   KeyboardAvoidingView,
   Platform,
@@ -23,18 +26,46 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, spacing, radius, cardShadow } from '@/theme';
 import { formatMoney } from '@/utils/format';
+import {
+  getPreview,
+  getSettlementHistory,
+  createSettlement,
+  toApiMethod,
+  type SettlementPreview,
+  type SettlementHistoryItem,
+} from '@/api/settlements';
+
+// ─── Period helpers ───────────────────────────────────────────────────────────
+
+const MONTHS_ES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
+function getCurrentPeriodDates(): { start: string; end: string; label: string } {
+  const now = new Date();
+  const day = now.getDate();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  const mm = String(month).padStart(2, '0');
+
+  if (day <= 15) {
+    return {
+      start: `${year}-${mm}-01`,
+      end: `${year}-${mm}-15`,
+      label: `1ra Quincena · ${MONTHS_ES[month - 1]} ${year}`,
+    };
+  } else {
+    const lastDay = new Date(year, month, 0).getDate();
+    return {
+      start: `${year}-${mm}-16`,
+      end: `${year}-${mm}-${lastDay}`,
+      label: `2da Quincena · ${MONTHS_ES[month - 1]} ${year}`,
+    };
+  }
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-interface CobroDetalle {
-  id: string;
-  folio: string;
-  cliente: string;
-  monto: number;
-  tipo: 'normal' | 'contado' | 'entrega';
-  comision: number;
-  fecha: string;
-}
 
 interface DeduccionDetalle {
   id: string;
@@ -44,91 +75,25 @@ interface DeduccionDetalle {
   tipo: 'gasolina' | 'prestamo' | 'diferencia';
 }
 
-interface LiquidacionHistorial {
-  id: string;
-  periodo: string;
-  monto: number;
-  status: 'pagado' | 'pendiente';
-  fecha?: string;
-}
-
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const COBRADOR_MOCK = {
-  id: '1',
-  nombre: 'Edgar Martínez',
-  initials: 'EM',
-  avatarColor: '#4A3AFF',
-  nivel: 1,
-  antiguedad: '2 años',
-  metaCobro: 17000,
-  totalCobrado: 13200,
-  porcentajeMeta: 78,
-};
-
-const COMISIONES_MOCK = {
-  cobranza: {
-    cantidad: 12,
-    montoCobrado: 13200,
-    porcentaje: 10,
-    comision: 1320,
-  },
-  contado: {
-    cantidad: 3,
-    montoCobrado: 8500,
-    porcentaje: 5,
-    comision: 425,
-  },
-  entregas: {
-    cantidad: 5,
-    montoUnitario: 50,
-    comision: 250,
-  },
-  total: 1995,
-};
-
-const DEDUCCIONES_MOCK: DeduccionDetalle[] = [
-  {
-    id: '1',
-    concepto: 'Gasolina (50%)',
-    descripcion: '6 cargas · $800 total',
-    monto: 400,
-    tipo: 'gasolina',
-  },
-  {
-    id: '2',
-    concepto: 'Préstamo moto',
-    descripcion: 'Cuota 4 de 12',
-    monto: 200,
-    tipo: 'prestamo',
-  },
-];
-
-const HISTORIAL_MOCK: LiquidacionHistorial[] = [
-  { id: '1', periodo: '1ra Qna Feb 2026', monto: 1180, status: 'pagado', fecha: '16 feb' },
-  { id: '2', periodo: '2da Qna Ene 2026', monto: 1450, status: 'pagado', fecha: '31 ene' },
-  { id: '3', periodo: '1ra Qna Ene 2026', monto: 980, status: 'pagado', fecha: '16 ene' },
-];
-
 // ─── Components ───────────────────────────────────────────────────────────────
 
-function Section({ 
-  title, 
-  total, 
+function Section({
+  title,
+  total,
   totalColor = colors.textDark,
   icon,
   children,
   defaultExpanded = true,
-}: { 
-  title: string; 
-  total?: number; 
+}: {
+  title: string;
+  total?: number;
   totalColor?: string;
   icon?: string;
   children: React.ReactNode;
   defaultExpanded?: boolean;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
-  
+
   return (
     <View style={styles.section}>
       <Pressable style={styles.sectionHeader} onPress={() => setExpanded(!expanded)}>
@@ -142,32 +107,28 @@ function Section({
               {total >= 0 ? '+' : ''}{formatMoney(total)}
             </Text>
           )}
-          <Ionicons 
-            name={expanded ? 'chevron-up' : 'chevron-down'} 
-            size={18} 
-            color={colors.textMedium} 
+          <Ionicons
+            name={expanded ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color={colors.textMedium}
           />
         </View>
       </Pressable>
-      
-      {expanded && (
-        <View style={styles.sectionContent}>
-          {children}
-        </View>
-      )}
+
+      {expanded && <View style={styles.sectionContent}>{children}</View>}
     </View>
   );
 }
 
-function ComisionRow({ 
-  label, 
-  detail, 
-  amount, 
-  isLast = false 
-}: { 
-  label: string; 
-  detail: string; 
-  amount: number; 
+function ComisionRow({
+  label,
+  detail,
+  amount,
+  isLast = false,
+}: {
+  label: string;
+  detail: string;
+  amount: number;
   isLast?: boolean;
 }) {
   return (
@@ -181,13 +142,19 @@ function ComisionRow({
   );
 }
 
-function DeduccionRow({ item, isLast = false }: { item: DeduccionDetalle; isLast?: boolean }) {
+function DeduccionRow({
+  item,
+  isLast = false,
+}: {
+  item: DeduccionDetalle;
+  isLast?: boolean;
+}) {
   const iconMap = {
     gasolina: '⛽',
     prestamo: '🏍️',
     diferencia: '⚠️',
   };
-  
+
   return (
     <View style={[styles.comisionRow, !isLast && styles.comisionRowBorder]}>
       <View style={styles.comisionInfo}>
@@ -203,57 +170,59 @@ function DeduccionRow({ item, isLast = false }: { item: DeduccionDetalle; isLast
   );
 }
 
-function PaymentModal({ 
-  visible, 
-  onClose, 
+// ─── Payment Modal ────────────────────────────────────────────────────────────
+
+function PaymentModal({
+  visible,
+  onClose,
   onConfirm,
   cobrador,
   neto,
-}: { 
-  visible: boolean; 
-  onClose: () => void; 
-  onConfirm: (method: string) => void;
+  periodo,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onConfirm: (method: string) => Promise<void>;
   cobrador: { nombre: string; initials: string; avatarColor: string };
   neto: number;
+  periodo: string;
 }) {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [success, setSuccess] = useState(false);
-  
-  const handleConfirm = () => {
+  const [error, setError] = useState<string | null>(null);
+
+  const handleConfirm = async () => {
     if (!selectedMethod) return;
     setConfirming(true);
-    
-    // Simular proceso
-    setTimeout(() => {
+    setError(null);
+    try {
+      await onConfirm(selectedMethod);
       setSuccess(true);
       setTimeout(() => {
-        onConfirm(selectedMethod);
         setSuccess(false);
         setConfirming(false);
         setSelectedMethod(null);
       }, 1500);
-    }, 500);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || 'Error al registrar el pago');
+      setConfirming(false);
+    }
   };
-  
+
   const handleClose = () => {
     setSelectedMethod(null);
     setSuccess(false);
     setConfirming(false);
+    setError(null);
     onClose();
   };
-  
+
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleClose}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           {success ? (
-            // Success state
             <View style={styles.successContainer}>
               <View style={styles.successIcon}>
                 <Ionicons name="checkmark" size={48} color={colors.white} />
@@ -264,55 +233,68 @@ function PaymentModal({
               </Text>
             </View>
           ) : (
-            // Payment selection
             <>
               <View style={[styles.modalAvatar, { backgroundColor: cobrador.avatarColor }]}>
                 <Text style={styles.modalAvatarText}>{cobrador.initials}</Text>
               </View>
-              
+
               <Text style={styles.modalName}>{cobrador.nombre}</Text>
               <Text style={styles.modalAmount}>{formatMoney(neto)}</Text>
-              <Text style={styles.modalPeriodo}>2da Quincena · Feb 2026</Text>
-              
+              <Text style={styles.modalPeriodo}>{periodo}</Text>
+
+              {error && (
+                <Text style={styles.modalError}>{error}</Text>
+              )}
+
               <View style={styles.methodsContainer}>
-                <Pressable 
+                <Pressable
                   style={[
                     styles.methodButton,
                     selectedMethod === 'efectivo' && styles.methodSelected,
                   ]}
                   onPress={() => setSelectedMethod('efectivo')}
                 >
-                  <Ionicons 
-                    name="cash-outline" 
-                    size={24} 
-                    color={selectedMethod === 'efectivo' ? colors.primary : colors.textMedium} 
+                  <Ionicons
+                    name="cash-outline"
+                    size={24}
+                    color={selectedMethod === 'efectivo' ? colors.primary : colors.textMedium}
                   />
-                  <Text style={[
-                    styles.methodText,
-                    selectedMethod === 'efectivo' && styles.methodTextSelected,
-                  ]}>Efectivo</Text>
+                  <Text
+                    style={[
+                      styles.methodText,
+                      selectedMethod === 'efectivo' && styles.methodTextSelected,
+                    ]}
+                  >
+                    Efectivo
+                  </Text>
                 </Pressable>
-                
-                <Pressable 
+
+                <Pressable
                   style={[
                     styles.methodButton,
                     selectedMethod === 'transferencia' && styles.methodSelected,
                   ]}
                   onPress={() => setSelectedMethod('transferencia')}
                 >
-                  <Ionicons 
-                    name="phone-portrait-outline" 
-                    size={24} 
-                    color={selectedMethod === 'transferencia' ? colors.primary : colors.textMedium} 
+                  <Ionicons
+                    name="phone-portrait-outline"
+                    size={24}
+                    color={
+                      selectedMethod === 'transferencia' ? colors.primary : colors.textMedium
+                    }
                   />
-                  <Text style={[
-                    styles.methodText,
-                    selectedMethod === 'transferencia' && styles.methodTextSelected,
-                  ]}>Transferencia</Text>
+                  <Text
+                    style={[
+                      styles.methodText,
+                      selectedMethod === 'transferencia' && styles.methodTextSelected,
+                    ]}
+                  >
+                    Transferencia
+                  </Text>
                 </Pressable>
               </View>
-              
-              <Pressable 
+
+              <Pressable
                 style={[
                   styles.confirmButton,
                   !selectedMethod && styles.confirmButtonDisabled,
@@ -321,7 +303,7 @@ function PaymentModal({
                 disabled={!selectedMethod || confirming}
               >
                 {confirming ? (
-                  <Text style={styles.confirmButtonText}>Procesando...</Text>
+                  <ActivityIndicator size="small" color={colors.white} />
                 ) : (
                   <>
                     <Ionicons name="checkmark-circle" size={20} color={colors.white} />
@@ -329,7 +311,7 @@ function PaymentModal({
                   </>
                 )}
               </Pressable>
-              
+
               <Pressable style={styles.cancelButton} onPress={handleClose}>
                 <Text style={styles.cancelButtonText}>Cancelar</Text>
               </Pressable>
@@ -368,9 +350,7 @@ function AddDeduccionModal({
   const handleAdd = () => {
     const montoNum = parseFloat(monto.replace(/,/g, ''));
     if (!concepto.trim() || isNaN(montoNum) || montoNum <= 0) return;
-    
     onAdd(concepto.trim(), montoNum);
-    // Reset
     setConcepto('');
     setMonto('');
     setTipoSeleccionado(null);
@@ -395,13 +375,8 @@ function AddDeduccionModal({
   const isValid = concepto.trim() && monto && parseFloat(monto.replace(/,/g, '')) > 0;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleClose}
-    >
-      <KeyboardAvoidingView 
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={addModalStyles.overlay}
       >
@@ -412,7 +387,6 @@ function AddDeduccionModal({
             <Text style={addModalStyles.subtitle}>Para {cobradorNombre}</Text>
           </View>
 
-          {/* Tipos comunes */}
           <Text style={addModalStyles.label}>TIPO DE DEDUCCIÓN</Text>
           <View style={addModalStyles.tiposGrid}>
             {tiposComunes.map((tipo) => (
@@ -425,15 +399,18 @@ function AddDeduccionModal({
                 onPress={() => handleTipoPress(tipo)}
               >
                 <Text style={addModalStyles.tipoIcon}>{tipo.icon}</Text>
-                <Text style={[
-                  addModalStyles.tipoLabel,
-                  tipoSeleccionado === tipo.id && addModalStyles.tipoLabelSelected,
-                ]}>{tipo.label}</Text>
+                <Text
+                  style={[
+                    addModalStyles.tipoLabel,
+                    tipoSeleccionado === tipo.id && addModalStyles.tipoLabelSelected,
+                  ]}
+                >
+                  {tipo.label}
+                </Text>
               </Pressable>
             ))}
           </View>
 
-          {/* Concepto (editable si es "otro") */}
           {tipoSeleccionado === 'otro' && (
             <>
               <Text style={addModalStyles.label}>CONCEPTO</Text>
@@ -447,7 +424,6 @@ function AddDeduccionModal({
             </>
           )}
 
-          {/* Monto */}
           <Text style={addModalStyles.label}>MONTO</Text>
           <View style={addModalStyles.montoContainer}>
             <Text style={addModalStyles.montoPrefix}>$</Text>
@@ -461,12 +437,8 @@ function AddDeduccionModal({
             />
           </View>
 
-          {/* Botones */}
           <Pressable
-            style={[
-              addModalStyles.addButton,
-              !isValid && addModalStyles.addButtonDisabled,
-            ]}
+            style={[addModalStyles.addButton, !isValid && addModalStyles.addButtonDisabled]}
             onPress={handleAdd}
             disabled={!isValid}
           >
@@ -540,9 +512,7 @@ const addModalStyles = StyleSheet.create({
     borderColor: colors.primary,
     backgroundColor: colors.primaryBg,
   },
-  tipoIcon: {
-    fontSize: 16,
-  },
+  tipoIcon: { fontSize: 16 },
   tipoLabel: {
     fontSize: 12,
     fontWeight: '500',
@@ -593,9 +563,7 @@ const addModalStyles = StyleSheet.create({
     marginTop: spacing.xl,
     gap: spacing.sm,
   },
-  addButtonDisabled: {
-    opacity: 0.5,
-  },
+  addButtonDisabled: { opacity: 0.5 },
   addButtonText: {
     fontSize: 14,
     fontWeight: '700',
@@ -615,40 +583,169 @@ const addModalStyles = StyleSheet.create({
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
+const AVATAR_COLORS = [
+  '#4A3AFF', '#34C759', '#FF6B35', '#8E44AD',
+  '#E91E63', '#00BCD4', '#FF9500', '#5856D6',
+];
+
+function getInitials(fullName: string): string {
+  const parts = fullName.trim().split(' ');
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return parts[0].slice(0, 2).toUpperCase();
+}
+
+function deductionTypeToTipo(type: string): DeduccionDetalle['tipo'] {
+  if (type === 'fuel') return 'gasolina';
+  if (type === 'loan') return 'prestamo';
+  return 'diferencia';
+}
+
 export default function LiquidacionDetalleScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const employeeRoleId = parseInt(id, 10);
+
+  const period = getCurrentPeriodDates();
+
+  // ── State ──────────────────────────────────────────────────────────────────
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<SettlementPreview | null>(null);
+  const [historial, setHistorial] = useState<SettlementHistoryItem[]>([]);
+  const [deducciones, setDeducciones] = useState<DeduccionDetalle[]>([]);
+
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showDeduccionModal, setShowDeduccionModal] = useState(false);
-  const [deducciones, setDeducciones] = useState<DeduccionDetalle[]>(DEDUCCIONES_MOCK);
-  
-  // Mock data - en producción vendría del API
-  const cobrador = COBRADOR_MOCK;
-  const comisiones = COMISIONES_MOCK;
-  const historial = HISTORIAL_MOCK;
-  
+  const [paid, setPaid] = useState(false);
+
+  // ── Fetch ──────────────────────────────────────────────────────────────────
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [previewData, historyData] = await Promise.all([
+        getPreview(employeeRoleId, period.start, period.end),
+        getSettlementHistory(employeeRoleId, 10),
+      ]);
+
+      setPreview(previewData);
+      setHistorial(historyData.items);
+
+      // Mapear deducciones del API a tipo local
+      const deduccionesApi: DeduccionDetalle[] = previewData.deductions.items.map((d, i) => ({
+        id: d.id ? String(d.id) : `api-${i}`,
+        concepto: d.concept,
+        descripcion: d.description || '',
+        monto: Number(d.amount),
+        tipo: deductionTypeToTipo(d.type),
+      }));
+      setDeducciones(deduccionesApi);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || 'No se pudo cargar la liquidación');
+    } finally {
+      setLoading(false);
+    }
+  }, [employeeRoleId, period.start, period.end]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // ── Derived ────────────────────────────────────────────────────────────────
+
   const totalDeducciones = deducciones.reduce((sum, d) => sum + d.monto, 0);
-  const neto = comisiones.total - totalDeducciones;
-  
+  const totalComisiones = preview ? Number(preview.commissions.total) : 0;
+  const neto = totalComisiones - totalDeducciones;
+
+  const cobrador = preview
+    ? {
+        nombre: preview.employee.full_name,
+        initials: getInitials(preview.employee.full_name),
+        avatarColor: AVATAR_COLORS[employeeRoleId % AVATAR_COLORS.length],
+        nivel: 1,
+        antiguedad: '',
+        metaCobro: Number(preview.goal_amount),
+        totalCobrado: Number(preview.total_collected),
+        porcentajeMeta: Math.min(Math.round(preview.goal_percentage), 100),
+      }
+    : null;
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
   const handleAddDeduccion = (concepto: string, monto: number) => {
     const nuevaDeduccion: DeduccionDetalle = {
       id: `manual-${Date.now()}`,
-      concepto: concepto,
+      concepto,
       descripcion: 'Agregado manualmente',
-      monto: monto,
+      monto,
       tipo: 'diferencia',
     };
-    setDeducciones(prev => [...prev, nuevaDeduccion]);
+    setDeducciones((prev) => [...prev, nuevaDeduccion]);
     setShowDeduccionModal(false);
+    // TODO: cuando haya settlement_id pendiente, llamar addManualDeduction()
   };
-  
-  const handlePaymentConfirm = (method: string) => {
-    console.log(`Pago confirmado: ${method}`);
-    setShowPaymentModal(false);
-    // TODO: Navegar de vuelta con estado actualizado
-    router.back();
+
+  const handlePaymentConfirm = async (method: string) => {
+    if (!preview) return;
+    await createSettlement({
+      employee_role_id: employeeRoleId,
+      period_start: period.start,
+      period_end: period.end,
+      payment_method: toApiMethod(method),
+    });
+    setPaid(true);
+    // Cerrar modal + volver después del ícono de éxito
+    setTimeout(() => {
+      setShowPaymentModal(false);
+      router.back();
+    }, 1800);
   };
-  
+
+  // ── Loading / Error ────────────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <SafeAreaView edges={['top']} style={styles.safe}>
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={24} color={colors.white} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Liquidación</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.centerState}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.centerStateText}>Calculando...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !preview || !cobrador) {
+    return (
+      <SafeAreaView edges={['top']} style={styles.safe}>
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={24} color={colors.white} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Liquidación</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.centerState}>
+          <Ionicons name="cloud-offline-outline" size={48} color={colors.textMedium} />
+          <Text style={styles.errorText}>{error || 'Error desconocido'}</Text>
+          <Pressable style={styles.retryButton} onPress={fetchData}>
+            <Text style={styles.retryText}>Reintentar</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
     <SafeAreaView edges={['top']} style={styles.safe}>
       {/* Header */}
@@ -661,7 +758,7 @@ export default function LiquidacionDetalleScreen() {
           <Ionicons name="ellipsis-horizontal" size={22} color={colors.white} />
         </Pressable>
       </View>
-      
+
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Profile card */}
         <View style={styles.profileCard}>
@@ -670,17 +767,17 @@ export default function LiquidacionDetalleScreen() {
           </View>
           <Text style={styles.profileName}>{cobrador.nombre}</Text>
           <Text style={styles.profileInfo}>
-            Cobrador · Nivel {cobrador.nivel} · {cobrador.antiguedad}
+            Cobrador · {preview.employee.code}
+            {cobrador.antiguedad ? ` · ${cobrador.antiguedad}` : ''}
           </Text>
-          
-          {/* Progress */}
+
           <View style={styles.progressSection}>
             <View style={styles.progressBar}>
-              <View 
+              <View
                 style={[
-                  styles.progressFill, 
-                  { width: `${Math.min(cobrador.porcentajeMeta, 100)}%` }
-                ]} 
+                  styles.progressFill,
+                  { width: `${cobrador.porcentajeMeta}%` },
+                ]}
               />
             </View>
             <Text style={styles.progressText}>
@@ -688,106 +785,149 @@ export default function LiquidacionDetalleScreen() {
             </Text>
           </View>
         </View>
-        
+
         {/* Neto card */}
         <View style={styles.netoCard}>
           <Text style={styles.netoLabel}>NETO A PAGAR</Text>
           <Text style={[styles.netoValue, neto < 0 && styles.netoNegative]}>
             {formatMoney(neto)}
           </Text>
-          
-          <Pressable 
-            style={styles.payButton}
-            onPress={() => setShowPaymentModal(true)}
-          >
-            <Ionicons name="card-outline" size={20} color={colors.white} />
-            <Text style={styles.payButtonText}>PAGAR AHORA</Text>
-          </Pressable>
+
+          {paid ? (
+            <View style={styles.paidBadge}>
+              <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+              <Text style={styles.paidBadgeText}>Pago registrado</Text>
+            </View>
+          ) : (
+            <Pressable style={styles.payButton} onPress={() => setShowPaymentModal(true)}>
+              <Ionicons name="card-outline" size={20} color={colors.white} />
+              <Text style={styles.payButtonText}>PAGAR AHORA</Text>
+            </Pressable>
+          )}
         </View>
-        
+
+        {/* Alerts */}
+        {preview.has_alerts && preview.alerts.length > 0 && (
+          <View style={styles.alertsCard}>
+            {preview.alerts.map((alert, i) => (
+              <View key={i} style={styles.alertRow}>
+                <Ionicons name="alert-circle" size={16} color={colors.orange} />
+                <Text style={styles.alertText}>{alert}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Comisiones section */}
-        <Section title="COMISIONES" total={comisiones.total} totalColor={colors.success} icon="💰">
-          <ComisionRow 
+        <Section
+          title="COMISIONES"
+          total={totalComisiones}
+          totalColor={colors.success}
+          icon="💰"
+        >
+          <ComisionRow
             label="Cobranza normal (10%)"
-            detail={`${comisiones.cobranza.cantidad} cobros · ${formatMoney(comisiones.cobranza.montoCobrado)}`}
-            amount={comisiones.cobranza.comision}
+            detail={`${preview.commissions.regular.count} cobros · ${formatMoney(Number(preview.commissions.regular.amount_collected))}`}
+            amount={Number(preview.commissions.regular.commission)}
           />
-          <ComisionRow 
+          <ComisionRow
             label="Pagos de contado (5%)"
-            detail={`${comisiones.contado.cantidad} cobros · ${formatMoney(comisiones.contado.montoCobrado)}`}
-            amount={comisiones.contado.comision}
+            detail={`${preview.commissions.cash.count} cobros · ${formatMoney(Number(preview.commissions.cash.amount_collected))}`}
+            amount={Number(preview.commissions.cash.commission)}
           />
-          <ComisionRow 
+          <ComisionRow
             label="Entregas ($50 c/u)"
-            detail={`${comisiones.entregas.cantidad} pólizas/endosos`}
-            amount={comisiones.entregas.comision}
+            detail={`${preview.commissions.delivery.count} pólizas/endosos`}
+            amount={Number(preview.commissions.delivery.commission)}
             isLast
           />
-          
+
           <Pressable style={styles.viewAllLink}>
-            <Text style={styles.viewAllText}>Ver {comisiones.cobranza.cantidad + comisiones.contado.cantidad} cobros del período</Text>
+            <Text style={styles.viewAllText}>
+              Ver{' '}
+              {preview.commissions.regular.count + preview.commissions.cash.count} cobros del período
+            </Text>
             <Ionicons name="chevron-forward" size={16} color={colors.primary} />
           </Pressable>
         </Section>
-        
+
         {/* Deducciones section */}
-        <Section 
-          title="DEDUCCIONES" 
-          total={-totalDeducciones} 
-          totalColor={colors.error} 
+        <Section
+          title="DEDUCCIONES"
+          total={-totalDeducciones}
+          totalColor={colors.error}
           icon="📉"
         >
           {deducciones.map((item, index) => (
-            <DeduccionRow 
-              key={item.id} 
-              item={item} 
+            <DeduccionRow
+              key={item.id}
+              item={item}
               isLast={index === deducciones.length - 1}
             />
           ))}
-          
+
           {deducciones.length === 0 && (
             <View style={styles.emptyState}>
               <Ionicons name="checkmark-circle" size={24} color={colors.success} />
               <Text style={styles.emptyText}>Sin deducciones este período ✓</Text>
             </View>
           )}
-          
-          <Pressable style={styles.addDeduccionLink} onPress={() => setShowDeduccionModal(true)}>
-            <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
-            <Text style={styles.addDeduccionText}>Agregar deducción manual</Text>
-          </Pressable>
+
+          {!paid && (
+            <Pressable
+              style={styles.addDeduccionLink}
+              onPress={() => setShowDeduccionModal(true)}
+            >
+              <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
+              <Text style={styles.addDeduccionText}>Agregar deducción manual</Text>
+            </Pressable>
+          )}
         </Section>
-        
+
         {/* Historial section */}
         <Section title="HISTORIAL" icon="📜" defaultExpanded={false}>
+          {historial.length === 0 && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>Sin liquidaciones anteriores</Text>
+            </View>
+          )}
+
           {historial.map((item) => (
             <View key={item.id} style={styles.historialRow}>
               <View>
-                <Text style={styles.historialPeriodo}>{item.periodo}</Text>
-                {item.fecha && (
-                  <Text style={styles.historialFecha}>Pagado el {item.fecha}</Text>
+                <Text style={styles.historialPeriodo}>{item.period_label}</Text>
+                {item.paid_at && (
+                  <Text style={styles.historialFecha}>
+                    Pagado el{' '}
+                    {new Date(item.paid_at).toLocaleDateString('es-MX', {
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </Text>
                 )}
               </View>
               <View style={styles.historialRight}>
-                <Text style={styles.historialMonto}>{formatMoney(item.monto)}</Text>
-                <Ionicons 
-                  name={item.status === 'pagado' ? 'checkmark-circle' : 'time-outline'} 
-                  size={16} 
-                  color={item.status === 'pagado' ? colors.success : colors.orange} 
+                <Text style={styles.historialMonto}>{formatMoney(Number(item.net_amount))}</Text>
+                <Ionicons
+                  name={item.status === 'paid' ? 'checkmark-circle' : 'time-outline'}
+                  size={16}
+                  color={item.status === 'paid' ? colors.success : colors.orange}
                 />
               </View>
             </View>
           ))}
-          
-          <Pressable style={styles.viewAllLink}>
-            <Text style={styles.viewAllText}>Ver historial completo</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-          </Pressable>
+
+          {historial.length > 0 && (
+            <Pressable style={styles.viewAllLink}>
+              <Text style={styles.viewAllText}>Ver historial completo</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+            </Pressable>
+          )}
         </Section>
-        
+
         <View style={{ height: 40 }} />
       </ScrollView>
-      
+
       {/* Payment Modal */}
       <PaymentModal
         visible={showPaymentModal}
@@ -795,8 +935,9 @@ export default function LiquidacionDetalleScreen() {
         onConfirm={handlePaymentConfirm}
         cobrador={cobrador}
         neto={neto}
+        periodo={period.label}
       />
-      
+
       {/* Add Deduccion Modal */}
       <AddDeduccionModal
         visible={showDeduccionModal}
@@ -815,7 +956,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  
+
   // Header
   header: {
     flexDirection: 'row',
@@ -842,11 +983,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'flex-end',
   },
-  
-  scroll: {
+
+  scroll: { flex: 1 },
+
+  // Center states
+  centerState: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing['3xl'],
   },
-  
+  centerStateText: {
+    fontSize: 14,
+    color: colors.textMedium,
+  },
+  errorText: {
+    fontSize: 14,
+    color: colors.error,
+    textAlign: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  retryButton: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    marginTop: spacing.sm,
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.white,
+  },
+
   // Profile card
   profileCard: {
     backgroundColor: colors.white,
@@ -880,9 +1050,7 @@ const styles = StyleSheet.create({
     color: colors.textMedium,
     marginBottom: spacing.lg,
   },
-  progressSection: {
-    width: '100%',
-  },
+  progressSection: { width: '100%' },
   progressBar: {
     height: 8,
     backgroundColor: colors.border,
@@ -900,7 +1068,7 @@ const styles = StyleSheet.create({
     color: colors.textMedium,
     textAlign: 'center',
   },
-  
+
   // Neto card
   netoCard: {
     backgroundColor: colors.white,
@@ -924,9 +1092,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
     marginBottom: spacing.lg,
   },
-  netoNegative: {
-    color: colors.error,
-  },
+  netoNegative: { color: colors.error },
   payButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -943,7 +1109,42 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.white,
   },
-  
+  paidBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.successBg,
+    borderRadius: radius.md,
+  },
+  paidBadgeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.success,
+  },
+
+  // Alerts
+  alertsCard: {
+    backgroundColor: colors.orangeBg,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    gap: spacing.sm,
+    ...cardShadow,
+  },
+  alertRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  alertText: {
+    fontSize: 13,
+    color: colors.orange,
+    flex: 1,
+  },
+
   // Sections
   section: {
     backgroundColor: colors.white,
@@ -967,9 +1168,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  sectionIcon: {
-    fontSize: 16,
-  },
+  sectionIcon: { fontSize: 16 },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '700',
@@ -985,10 +1184,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  sectionContent: {
-    padding: spacing.lg,
-  },
-  
+  sectionContent: { padding: spacing.lg },
+
   // Comision rows
   comisionRow: {
     flexDirection: 'row',
@@ -1000,9 +1197,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  comisionInfo: {
-    flex: 1,
-  },
+  comisionInfo: { flex: 1 },
   comisionLabel: {
     fontSize: 14,
     fontWeight: '500',
@@ -1018,10 +1213,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.success,
   },
-  deduccionAmount: {
-    color: colors.error,
-  },
-  
+  deduccionAmount: { color: colors.error },
+
   // Links
   viewAllLink: {
     flexDirection: 'row',
@@ -1052,7 +1245,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.primary,
   },
-  
+
   // Empty state
   emptyState: {
     flexDirection: 'row',
@@ -1065,7 +1258,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.success,
   },
-  
+
   // Historial
   historialRow: {
     flexDirection: 'row',
@@ -1095,7 +1288,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textDark,
   },
-  
+
   // Modal
   modalOverlay: {
     flex: 1,
@@ -1142,6 +1335,13 @@ const styles = StyleSheet.create({
     color: colors.textMedium,
     marginBottom: spacing['2xl'],
   },
+  modalError: {
+    fontSize: 13,
+    color: colors.error,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.sm,
+  },
   methodsContainer: {
     flexDirection: 'row',
     gap: spacing.md,
@@ -1166,9 +1366,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textMedium,
   },
-  methodTextSelected: {
-    color: colors.primary,
-  },
+  methodTextSelected: { color: colors.primary },
   confirmButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1198,7 +1396,7 @@ const styles = StyleSheet.create({
     color: colors.textMedium,
     fontWeight: '500',
   },
-  
+
   // Success state
   successContainer: {
     alignItems: 'center',

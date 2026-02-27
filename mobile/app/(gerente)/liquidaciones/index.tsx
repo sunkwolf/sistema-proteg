@@ -1,11 +1,12 @@
 /**
  * Liquidaciones - Vista general de todos los cobradores
- * 
+ *
  * Diseño: Claudy ✨
  * Una vista de cartas donde Elena ve TODO de un vistazo.
+ * Conectado a la API real el 2026-02-27.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,7 +14,7 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  Animated,
+  ActivityIndicator,
   Modal,
   ScrollView,
 } from 'react-native';
@@ -22,6 +23,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, spacing, radius, cardShadow } from '@/theme';
 import { formatMoney } from '@/utils/format';
+import {
+  getAllPreviews,
+  createBatchSettlement,
+  toApiMethod,
+  type SettlementPreview,
+} from '@/api/settlements';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -32,29 +39,29 @@ interface CobradorLiquidacion {
   nombre: string;
   initials: string;
   avatarColor: string;
-  
+
   // Progreso
   metaCobro: number;
   totalCobrado: number;
   porcentajeMeta: number;
-  
+
   // Comisiones
-  comisionCobranza: number;    // 10% de cobros normales
-  comisionContado: number;     // 5% de contados
-  comisionEntregas: number;    // $50 × entregas
+  comisionCobranza: number;
+  comisionContado: number;
+  comisionEntregas: number;
   totalComisiones: number;
-  
+
   // Deducciones
   deduccionGasolina: number;
   deduccionPrestamo: number;
   deduccionDiferencias: number;
   totalDeducciones: number;
-  
+
   // Resumen
   neto: number;
   status: LiquidacionStatus;
   statusMessage: string;
-  
+
   // Si ya pagado
   fechaPago?: string;
   superioMeta?: boolean;
@@ -65,141 +72,110 @@ interface Periodo {
   quincena: '1ra' | '2da';
   mes: number;
   anio: number;
+  start: string;
+  end: string;
 }
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const PERIODO_ACTUAL: Periodo = {
-  label: '2da Quincena · Febrero 2026',
-  quincena: '2da',
-  mes: 2,
-  anio: 2026,
-};
-
-const COBRADORES_MOCK: CobradorLiquidacion[] = [
-  {
-    id: '1',
-    nombre: 'Edgar Martínez',
-    initials: 'EM',
-    avatarColor: '#4A3AFF',
-    metaCobro: 17000,
-    totalCobrado: 13200,
-    porcentajeMeta: 78,
-    comisionCobranza: 1320,
-    comisionContado: 425,
-    comisionEntregas: 250,
-    totalComisiones: 1995,
-    deduccionGasolina: 400,
-    deduccionPrestamo: 200,
-    deduccionDiferencias: 0,
-    totalDeducciones: 600,
-    neto: 1395,
-    status: 'ready',
-    statusMessage: 'Listo para pagar',
-  },
-  {
-    id: '2',
-    nombre: 'Laura Jiménez',
-    initials: 'LJ',
-    avatarColor: '#34C759',
-    metaCobro: 15000,
-    totalCobrado: 16800,
-    porcentajeMeta: 112,
-    comisionCobranza: 1680,
-    comisionContado: 510,
-    comisionEntregas: 150,
-    totalComisiones: 2340,
-    deduccionGasolina: 350,
-    deduccionPrestamo: 0,
-    deduccionDiferencias: 100,
-    totalDeducciones: 450,
-    neto: 1890,
-    status: 'ready',
-    statusMessage: '¡Superó su meta!',
-    superioMeta: true,
-  },
-  {
-    id: '3',
-    nombre: 'Carlos Vega',
-    initials: 'CV',
-    avatarColor: '#FF6B35',
-    metaCobro: 14000,
-    totalCobrado: 7280,
-    porcentajeMeta: 52,
-    comisionCobranza: 728,
-    comisionContado: 172,
-    comisionEntregas: 0,
-    totalComisiones: 900,
-    deduccionGasolina: 600,
-    deduccionPrestamo: 300,
-    deduccionDiferencias: 150,
-    totalDeducciones: 1050,
-    neto: -150,
-    status: 'negative',
-    statusMessage: 'Saldo negativo — revisar deducciones',
-  },
-  {
-    id: '4',
-    nombre: 'Miguel Ruiz',
-    initials: 'MR',
-    avatarColor: '#8E44AD',
-    metaCobro: 12000,
-    totalCobrado: 10200,
-    porcentajeMeta: 85,
-    comisionCobranza: 1020,
-    comisionContado: 0,
-    comisionEntregas: 100,
-    totalComisiones: 1120,
-    deduccionGasolina: 280,
-    deduccionPrestamo: 0,
-    deduccionDiferencias: 0,
-    totalDeducciones: 280,
-    neto: 840,
-    status: 'paid',
-    statusMessage: 'Pagado el 28 feb',
-    fechaPago: '28 feb',
-  },
-  {
-    id: '5',
-    nombre: 'Ana Torres',
-    initials: 'AT',
-    avatarColor: '#E91E63',
-    metaCobro: 13000,
-    totalCobrado: 11700,
-    porcentajeMeta: 90,
-    comisionCobranza: 1170,
-    comisionContado: 285,
-    comisionEntregas: 100,
-    totalComisiones: 1555,
-    deduccionGasolina: 320,
-    deduccionPrestamo: 150,
-    deduccionDiferencias: 0,
-    totalDeducciones: 470,
-    neto: 1085,
-    status: 'ready',
-    statusMessage: 'Listo para pagar',
-  },
-  {
-    id: '6',
-    nombre: 'Roberto Sánchez',
-    initials: 'RS',
-    avatarColor: '#00BCD4',
-    metaCobro: 16000,
-    totalCobrado: 8000,
-    porcentajeMeta: 50,
-    comisionCobranza: 800,
-    comisionContado: 0,
-    comisionEntregas: 50,
-    totalComisiones: 850,
-    deduccionGasolina: 420,
-    deduccionPrestamo: 200,
-    deduccionDiferencias: 75,
-    totalDeducciones: 695,
-    neto: 155,
-    status: 'alert',
-    statusMessage: 'Diferencia sin justificar',
-  },
+const AVATAR_COLORS = [
+  '#4A3AFF', '#34C759', '#FF6B35', '#8E44AD',
+  '#E91E63', '#00BCD4', '#FF9500', '#5856D6',
 ];
+
+const MONTHS_ES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
+function getCurrentPeriod(): Periodo {
+  const now = new Date();
+  const day = now.getDate();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  const mm = String(month).padStart(2, '0');
+
+  if (day <= 15) {
+    return {
+      label: `1ra Quincena · ${MONTHS_ES[month - 1]} ${year}`,
+      quincena: '1ra',
+      mes: month,
+      anio: year,
+      start: `${year}-${mm}-01`,
+      end: `${year}-${mm}-15`,
+    };
+  } else {
+    const lastDay = new Date(year, month, 0).getDate();
+    return {
+      label: `2da Quincena · ${MONTHS_ES[month - 1]} ${year}`,
+      quincena: '2da',
+      mes: month,
+      anio: year,
+      start: `${year}-${mm}-16`,
+      end: `${year}-${mm}-${lastDay}`,
+    };
+  }
+}
+
+function getInitials(fullName: string): string {
+  const parts = fullName.trim().split(' ');
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return parts[0].slice(0, 2).toUpperCase();
+}
+
+function previewToLiquidacion(preview: SettlementPreview, index: number): CobradorLiquidacion {
+  const net = Number(preview.net_amount);
+  const superioMeta = preview.goal_percentage >= 100;
+
+  // Agrupar deducciones por tipo
+  const deductions = preview.deductions.items;
+  const fuelTotal = deductions
+    .filter((d) => d.type === 'fuel')
+    .reduce((s, d) => s + Number(d.amount), 0);
+  const loanTotal = deductions
+    .filter((d) => d.type === 'loan')
+    .reduce((s, d) => s + Number(d.amount), 0);
+  const otherTotal = deductions
+    .filter((d) => d.type !== 'fuel' && d.type !== 'loan')
+    .reduce((s, d) => s + Number(d.amount), 0);
+
+  // Determinar status y mensaje
+  let status: LiquidacionStatus;
+  let statusMessage: string;
+
+  if (net < 0) {
+    status = 'negative';
+    statusMessage = 'Saldo negativo — revisar deducciones';
+  } else if (preview.has_alerts) {
+    status = 'alert';
+    statusMessage = preview.alerts[0] || 'Tiene alertas pendientes';
+  } else {
+    status = 'ready';
+    statusMessage = superioMeta ? '¡Superó su meta!' : 'Listo para pagar';
+  }
+
+  return {
+    id: String(preview.employee.employee_role_id),
+    nombre: preview.employee.full_name,
+    initials: getInitials(preview.employee.full_name),
+    avatarColor: AVATAR_COLORS[index % AVATAR_COLORS.length],
+    metaCobro: Number(preview.goal_amount),
+    totalCobrado: Number(preview.total_collected),
+    porcentajeMeta: Math.round(preview.goal_percentage),
+    comisionCobranza: Number(preview.commissions.regular.commission),
+    comisionContado: Number(preview.commissions.cash.commission),
+    comisionEntregas: Number(preview.commissions.delivery.commission),
+    totalComisiones: Number(preview.commissions.total),
+    deduccionGasolina: fuelTotal,
+    deduccionPrestamo: loanTotal,
+    deduccionDiferencias: otherTotal,
+    totalDeducciones: Number(preview.deductions.total),
+    neto: net,
+    status,
+    statusMessage,
+    superioMeta,
+  };
+}
 
 // ─── Components ───────────────────────────────────────────────────────────────
 
@@ -207,7 +183,7 @@ function StatusIcon({ status, superioMeta }: { status: LiquidacionStatus; superi
   if (superioMeta) {
     return <Text style={styles.statusIcon}>🏆</Text>;
   }
-  
+
   switch (status) {
     case 'ready':
       return <Ionicons name="checkmark-circle" size={20} color={colors.success} />;
@@ -224,20 +200,18 @@ function StatusIcon({ status, superioMeta }: { status: LiquidacionStatus; superi
 
 function ProgressBar({ percentage, status }: { percentage: number; status: LiquidacionStatus }) {
   const clampedPct = Math.min(percentage, 120);
-  const barColor = percentage >= 100 ? colors.success : 
-                   percentage >= 70 ? colors.primary : 
-                   colors.orange;
-  
+  const barColor =
+    percentage >= 100 ? colors.success : percentage >= 70 ? colors.primary : colors.orange;
+
   return (
     <View style={styles.progressContainer}>
       <View style={styles.progressTrack}>
-        <View 
+        <View
           style={[
-            styles.progressFill, 
-            { width: `${Math.min(clampedPct, 100)}%`, backgroundColor: barColor }
-          ]} 
+            styles.progressFill,
+            { width: `${Math.min(clampedPct, 100)}%`, backgroundColor: barColor },
+          ]}
         />
-        {/* Marca del 100% */}
         <View style={styles.progressMark} />
       </View>
       <Text style={[styles.progressText, { color: barColor }]}>{percentage}%</Text>
@@ -248,14 +222,14 @@ function ProgressBar({ percentage, status }: { percentage: number; status: Liqui
 function CobradorCard({ item, onPress }: { item: CobradorLiquidacion; onPress: () => void }) {
   const isPaid = item.status === 'paid';
   const isNegative = item.neto < 0;
-  
+
   return (
-    <Pressable 
+    <Pressable
       style={({ pressed }) => [
-        styles.card, 
+        styles.card,
         pressed && styles.cardPressed,
         isPaid && styles.cardPaid,
-      ]} 
+      ]}
       onPress={onPress}
     >
       {/* Header: Avatar + Nombre + Status Icon */}
@@ -269,8 +243,8 @@ function CobradorCard({ item, onPress }: { item: CobradorLiquidacion; onPress: (
         </View>
         <StatusIcon status={item.status} superioMeta={item.superioMeta} />
       </View>
-      
-      {/* Body: Resumen financiero o estado pagado */}
+
+      {/* Body */}
       {isPaid ? (
         <View style={styles.paidContainer}>
           <Ionicons name="checkmark-done" size={16} color={colors.success} />
@@ -280,14 +254,13 @@ function CobradorCard({ item, onPress }: { item: CobradorLiquidacion; onPress: (
         </View>
       ) : (
         <>
-          {/* Resumen: Comisiones - Deducciones = Neto */}
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>💰</Text>
               <Text style={styles.summaryValue}>{formatMoney(item.totalComisiones)}</Text>
               <Text style={styles.summaryCaption}>comisiones</Text>
             </View>
-            
+
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>📉</Text>
               <Text style={[styles.summaryValue, styles.deductionValue]}>
@@ -295,35 +268,35 @@ function CobradorCard({ item, onPress }: { item: CobradorLiquidacion; onPress: (
               </Text>
               <Text style={styles.summaryCaption}>deducciones</Text>
             </View>
-            
+
             <View style={styles.summaryDivider} />
-            
+
             <View style={[styles.summaryItem, styles.summaryNeto]}>
-              <Text style={[
-                styles.netoValue, 
-                isNegative && styles.netoNegative
-              ]}>
+              <Text style={[styles.netoValue, isNegative && styles.netoNegative]}>
                 {formatMoney(item.neto)}
               </Text>
               <Text style={styles.netoCaption}>NETO</Text>
             </View>
           </View>
-          
-          {/* Status message */}
-          <View style={[
-            styles.statusBadge,
-            item.status === 'ready' && styles.statusReady,
-            item.status === 'alert' && styles.statusAlert,
-            item.status === 'negative' && styles.statusNegative,
-            item.superioMeta && styles.statusChampion,
-          ]}>
-            <Text style={[
-              styles.statusText,
-              item.status === 'ready' && styles.statusTextReady,
-              item.status === 'alert' && styles.statusTextAlert,
-              item.status === 'negative' && styles.statusTextNegative,
-              item.superioMeta && styles.statusTextChampion,
-            ]}>
+
+          <View
+            style={[
+              styles.statusBadge,
+              item.status === 'ready' && styles.statusReady,
+              item.status === 'alert' && styles.statusAlert,
+              item.status === 'negative' && styles.statusNegative,
+              item.superioMeta && styles.statusChampion,
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusText,
+                item.status === 'ready' && styles.statusTextReady,
+                item.status === 'alert' && styles.statusTextAlert,
+                item.status === 'negative' && styles.statusTextNegative,
+                item.superioMeta && styles.statusTextChampion,
+              ]}
+            >
               {item.status === 'ready' && '🟢 '}
               {item.status === 'alert' && '🟡 '}
               {item.status === 'negative' && '🔴 '}
@@ -363,7 +336,6 @@ function PayAllModal({
       setSuccess(true);
       setTimeout(() => {
         onConfirm(selectedMethod);
-        // Reset state
         setSuccess(false);
         setConfirming(false);
         setSelectedMethod(null);
@@ -379,16 +351,10 @@ function PayAllModal({
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleClose}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
       <View style={modalStyles.overlay}>
         <View style={modalStyles.content}>
           {success ? (
-            // ─── Success State ───
             <View style={modalStyles.successContainer}>
               <View style={modalStyles.successIcon}>
                 <Ionicons name="checkmark" size={48} color={colors.white} />
@@ -406,7 +372,6 @@ function PayAllModal({
               </View>
             </View>
           ) : (
-            // ─── Selection State ───
             <>
               <View style={modalStyles.header}>
                 <Ionicons name="wallet" size={32} color={colors.primary} />
@@ -416,15 +381,14 @@ function PayAllModal({
               <Text style={modalStyles.amount}>{formatMoney(total)}</Text>
               <Text style={modalStyles.periodo}>2da Quincena · Feb 2026</Text>
 
-              {/* Lista de cobradores */}
               <View style={modalStyles.cobradoresList}>
-                <Text style={modalStyles.listTitle}>
-                  {cobradores.length} COBRADORES
-                </Text>
+                <Text style={modalStyles.listTitle}>{cobradores.length} COBRADORES</Text>
                 <ScrollView style={modalStyles.listScroll} nestedScrollEnabled>
                   {cobradores.map((c) => (
                     <View key={c.id} style={modalStyles.cobradorRow}>
-                      <View style={[modalStyles.miniAvatar, { backgroundColor: c.avatarColor }]}>
+                      <View
+                        style={[modalStyles.miniAvatar, { backgroundColor: c.avatarColor }]}
+                      >
                         <Text style={modalStyles.miniAvatarText}>{c.initials}</Text>
                       </View>
                       <Text style={modalStyles.cobradorName}>{c.nombre}</Text>
@@ -434,7 +398,6 @@ function PayAllModal({
                 </ScrollView>
               </View>
 
-              {/* Método de pago */}
               <Text style={modalStyles.methodLabel}>MÉTODO DE PAGO</Text>
               <View style={modalStyles.methodsContainer}>
                 <Pressable
@@ -469,7 +432,9 @@ function PayAllModal({
                   <Ionicons
                     name="phone-portrait-outline"
                     size={22}
-                    color={selectedMethod === 'transferencia' ? colors.primary : colors.textMedium}
+                    color={
+                      selectedMethod === 'transferencia' ? colors.primary : colors.textMedium
+                    }
                   />
                   <Text
                     style={[
@@ -482,7 +447,6 @@ function PayAllModal({
                 </Pressable>
               </View>
 
-              {/* Botones */}
               <Pressable
                 style={[
                   modalStyles.confirmButton,
@@ -663,7 +627,6 @@ const modalStyles = StyleSheet.create({
     color: colors.textMedium,
     fontWeight: '500',
   },
-  // Success state
   successContainer: {
     alignItems: 'center',
     paddingVertical: spacing.xl,
@@ -703,47 +666,92 @@ const modalStyles = StyleSheet.create({
 
 export default function LiquidacionesScreen() {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [periodo, setPeriodo] = useState(PERIODO_ACTUAL);
-  const [cobradores, setCobradores] = useState(COBRADORES_MOCK);
+  const [periodo, setPeriodo] = useState<Periodo>(getCurrentPeriod);
+  const [cobradores, setCobradores] = useState<CobradorLiquidacion[]>([]);
   const [showPayAllModal, setShowPayAllModal] = useState(false);
-  
-  // Calcular resumen
-  const cobradoresListos = cobradores.filter(c => c.status === 'ready');
-  const listos = cobradoresListos.length;
-  const conAlertas = cobradores.filter(c => c.status === 'alert' || c.status === 'negative').length;
-  const pagados = cobradores.filter(c => c.status === 'paid').length;
-  const totalListos = cobradores
-    .filter(c => c.status === 'ready')
-    .reduce((sum, c) => sum + c.neto, 0);
-  
+
+  // ── Fetch data ────────────────────────────────────────────────────────────
+
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    setError(null);
+    try {
+      const previews = await getAllPreviews(periodo.start, periodo.end);
+      setCobradores(previews.map(previewToLiquidacion));
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || 'No se pudieron cargar las liquidaciones');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [periodo.start, periodo.end]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    // TODO: Fetch real data
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
-  
+    fetchData(true);
+  }, [fetchData]);
+
   const handleCobradorPress = (cobrador: CobradorLiquidacion) => {
     router.push(`/(gerente)/liquidaciones/${cobrador.id}`);
   };
-  
+
   const handlePayAll = () => {
     setShowPayAllModal(true);
   };
-  
-  const handlePayAllConfirm = (method: string) => {
-    // Marcar todos los listos como pagados
-    const hoy = new Date();
-    const fechaPago = `${hoy.getDate()} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][hoy.getMonth()]}`;
-    
-    setCobradores(prev => prev.map(c => 
-      c.status === 'ready' 
-        ? { ...c, status: 'paid' as LiquidacionStatus, fechaPago, statusMessage: `Pagado el ${fechaPago}` }
-        : c
-    ));
+
+  const handlePayAllConfirm = async (method: string) => {
+    const listos = cobradores.filter((c) => c.status === 'ready');
+    try {
+      await createBatchSettlement({
+        employee_role_ids: listos.map((c) => parseInt(c.id, 10)),
+        period_start: periodo.start,
+        period_end: periodo.end,
+        payment_method: toApiMethod(method),
+      });
+
+      // Actualizar UI localmente (luego refresh revalida contra el servidor)
+      const hoy = new Date();
+      const fechaPago = `${hoy.getDate()} ${['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][hoy.getMonth()]}`;
+      setCobradores((prev) =>
+        prev.map((c) =>
+          c.status === 'ready'
+            ? {
+                ...c,
+                status: 'paid' as LiquidacionStatus,
+                fechaPago,
+                statusMessage: `Pagado el ${fechaPago}`,
+              }
+            : c,
+        ),
+      );
+    } catch (err: any) {
+      // El modal ya cerró — mostrar error como estado en pantalla
+      setError(err?.response?.data?.detail || 'Error al registrar los pagos');
+    }
     setShowPayAllModal(false);
   };
-  
+
+  // ── Derived state ─────────────────────────────────────────────────────────
+
+  const cobradoresListos = cobradores.filter((c) => c.status === 'ready');
+  const listos = cobradoresListos.length;
+  const conAlertas = cobradores.filter(
+    (c) => c.status === 'alert' || c.status === 'negative',
+  ).length;
+  const pagados = cobradores.filter((c) => c.status === 'paid').length;
+  const totalListos = cobradoresListos.reduce((sum, c) => sum + c.neto, 0);
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
     <SafeAreaView edges={['top']} style={styles.safe}>
       {/* Header */}
@@ -756,62 +764,89 @@ export default function LiquidacionesScreen() {
           <Ionicons name="options-outline" size={22} color={colors.white} />
         </Pressable>
       </View>
-      
+
       {/* Periodo selector */}
       <Pressable style={styles.periodoSelector}>
         <Ionicons name="calendar-outline" size={18} color={colors.primary} />
         <Text style={styles.periodoText}>{periodo.label}</Text>
         <Ionicons name="chevron-down" size={18} color={colors.textMedium} />
       </Pressable>
-      
-      {/* Summary bar */}
-      <View style={styles.summaryBar}>
-        <Text style={styles.summaryBarText}>
-          {cobradores.length} cobradores · 
-          <Text style={styles.summaryReady}> {listos} listos</Text> · 
-          <Text style={styles.summaryAlert}> {conAlertas} con alertas</Text> · 
-          <Text style={styles.summaryPaid}> {pagados} pagado{pagados !== 1 ? 's' : ''}</Text>
-        </Text>
-      </View>
-      
-      {/* List of cobradores */}
-      <FlatList
-        data={cobradores}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <CobradorCard item={item} onPress={() => handleCobradorPress(item)} />
-        )}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
+
+      {/* Loading state */}
+      {loading && (
+        <View style={styles.centerState}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.centerStateText}>Calculando liquidaciones...</Text>
+        </View>
+      )}
+
+      {/* Error state */}
+      {!loading && error && (
+        <View style={styles.centerState}>
+          <Ionicons name="cloud-offline-outline" size={48} color={colors.textMedium} />
+          <Text style={styles.errorText}>{error}</Text>
+          <Pressable style={styles.retryButton} onPress={() => fetchData()}>
+            <Text style={styles.retryText}>Reintentar</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {/* Data */}
+      {!loading && !error && (
+        <>
+          {/* Summary bar */}
+          <View style={styles.summaryBar}>
+            <Text style={styles.summaryBarText}>
+              {cobradores.length} cobradores ·
+              <Text style={styles.summaryReady}> {listos} listos</Text> ·
+              <Text style={styles.summaryAlert}> {conAlertas} con alertas</Text> ·
+              <Text style={styles.summaryPaid}>
+                {' '}
+                {pagados} pagado{pagados !== 1 ? 's' : ''}
+              </Text>
+            </Text>
+          </View>
+
+          <FlatList
+            data={cobradores}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <CobradorCard item={item} onPress={() => handleCobradorPress(item)} />
+            )}
+            contentContainerStyle={styles.listContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.primary}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.centerState}>
+                <Ionicons name="people-outline" size={48} color={colors.textMedium} />
+                <Text style={styles.centerStateText}>Sin cobradores activos</Text>
+              </View>
+            }
+            ListFooterComponent={<View style={{ height: 100 }} />}
           />
-        }
-        showsVerticalScrollIndicator={false}
-        ListFooterComponent={<View style={{ height: 100 }} />}
-      />
-      
+        </>
+      )}
+
       {/* Bottom action: Pay all ready */}
-      {listos > 0 && (
+      {!loading && !error && listos > 0 && (
         <View style={styles.bottomAction}>
-          <Pressable 
-            style={({ pressed }) => [
-              styles.payAllButton,
-              pressed && styles.payAllPressed,
-            ]}
+          <Pressable
+            style={({ pressed }) => [styles.payAllButton, pressed && styles.payAllPressed]}
             onPress={handlePayAll}
           >
             <Ionicons name="card-outline" size={20} color={colors.white} />
-            <Text style={styles.payAllText}>
-              PAGAR TODOS LOS LISTOS ({listos})
-            </Text>
+            <Text style={styles.payAllText}>PAGAR TODOS LOS LISTOS ({listos})</Text>
             <Text style={styles.payAllAmount}>{formatMoney(totalListos)}</Text>
           </Pressable>
         </View>
       )}
-      
+
       {/* Pay All Modal */}
       <PayAllModal
         visible={showPayAllModal}
@@ -831,7 +866,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  
+
   // Header
   header: {
     flexDirection: 'row',
@@ -858,7 +893,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'flex-end',
   },
-  
+
   // Periodo
   periodoSelector: {
     flexDirection: 'row',
@@ -878,7 +913,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textDark,
   },
-  
+
   // Summary bar
   summaryBar: {
     paddingHorizontal: spacing.lg,
@@ -891,12 +926,12 @@ const styles = StyleSheet.create({
   summaryReady: { color: colors.success },
   summaryAlert: { color: colors.orange },
   summaryPaid: { color: colors.textMedium },
-  
+
   // List
   listContent: {
     paddingHorizontal: spacing.lg,
   },
-  
+
   // Card
   card: {
     backgroundColor: colors.white,
@@ -912,7 +947,7 @@ const styles = StyleSheet.create({
   cardPaid: {
     opacity: 0.7,
   },
-  
+
   // Card header
   cardHeader: {
     flexDirection: 'row',
@@ -944,7 +979,7 @@ const styles = StyleSheet.create({
   statusIcon: {
     fontSize: 20,
   },
-  
+
   // Progress bar
   progressContainer: {
     flexDirection: 'row',
@@ -965,7 +1000,7 @@ const styles = StyleSheet.create({
   },
   progressMark: {
     position: 'absolute',
-    right: '16.67%', // 100/120 = ~83.33%, so mark is at 83.33% from left = 16.67% from right
+    right: '16.67%',
     top: -2,
     bottom: -2,
     width: 2,
@@ -978,7 +1013,7 @@ const styles = StyleSheet.create({
     width: 36,
     textAlign: 'right',
   },
-  
+
   // Summary row
   summaryRow: {
     flexDirection: 'row',
@@ -1031,7 +1066,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginTop: 2,
   },
-  
+
   // Status badge
   statusBadge: {
     paddingVertical: spacing.sm,
@@ -1039,35 +1074,16 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     alignSelf: 'flex-start',
   },
-  statusReady: {
-    backgroundColor: colors.successBg,
-  },
-  statusAlert: {
-    backgroundColor: colors.orangeBg,
-  },
-  statusNegative: {
-    backgroundColor: colors.errorBg,
-  },
-  statusChampion: {
-    backgroundColor: '#FFF8E1',
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  statusTextReady: {
-    color: colors.success,
-  },
-  statusTextAlert: {
-    color: colors.orange,
-  },
-  statusTextNegative: {
-    color: colors.error,
-  },
-  statusTextChampion: {
-    color: '#F9A825',
-  },
-  
+  statusReady: { backgroundColor: colors.successBg },
+  statusAlert: { backgroundColor: colors.orangeBg },
+  statusNegative: { backgroundColor: colors.errorBg },
+  statusChampion: { backgroundColor: '#FFF8E1' },
+  statusText: { fontSize: 12, fontWeight: '600' },
+  statusTextReady: { color: colors.success },
+  statusTextAlert: { color: colors.orange },
+  statusTextNegative: { color: colors.error },
+  statusTextChampion: { color: '#F9A825' },
+
   // Paid state
   paidContainer: {
     flexDirection: 'row',
@@ -1080,7 +1096,38 @@ const styles = StyleSheet.create({
     color: colors.success,
     fontWeight: '500',
   },
-  
+
+  // Center states (loading / error / empty)
+  centerState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: spacing['3xl'],
+    gap: spacing.md,
+  },
+  centerStateText: {
+    fontSize: 14,
+    color: colors.textMedium,
+  },
+  errorText: {
+    fontSize: 14,
+    color: colors.error,
+    textAlign: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  retryButton: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    marginTop: spacing.sm,
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.white,
+  },
+
   // Bottom action
   bottomAction: {
     position: 'absolute',
