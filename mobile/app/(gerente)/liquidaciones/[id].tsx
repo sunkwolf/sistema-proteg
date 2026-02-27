@@ -49,7 +49,20 @@ function getCurrentPeriodDates(): { start: string; end: string; label: string } 
   const year = now.getFullYear();
   const mm = String(month).padStart(2, '0');
 
-  if (day <= 15) {
+  if (day <= 5) {
+    const lastMonthDate = new Date(year, month - 2, 1);
+    const lm = lastMonthDate.getMonth() + 1;
+    const ly = lastMonthDate.getFullYear();
+    const lmm = String(lm).padStart(2, '0');
+    const lastDay = new Date(ly, lm, 0).getDate();
+    return {
+      start: `${ly}-${lmm}-16`,
+      end: `${ly}-${lmm}-${lastDay}`,
+      label: `2da Quincena · ${MONTHS_ES[lm - 1]} ${ly}`,
+    };
+  }
+
+  if (day <= 20) {
     return {
       start: `${year}-${mm}-01`,
       end: `${year}-${mm}-15`,
@@ -227,9 +240,12 @@ function PaymentModal({
               <View style={styles.successIcon}>
                 <Ionicons name="checkmark" size={48} color={colors.white} />
               </View>
-              <Text style={styles.successTitle}>¡Pago registrado!</Text>
+              <Text style={styles.successTitle}>¡Pago Exitoso! ✨</Text>
               <Text style={styles.successSubtitle}>
-                {cobrador.nombre} · {formatMoney(neto)}
+                {cobrador.nombre} ha sido liquidado con éxito.
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.primary, marginTop: 10, fontStyle: 'italic' }}>
+                Tu gestión hace la diferencia. 💜
               </Text>
             </View>
           ) : (
@@ -584,8 +600,8 @@ const addModalStyles = StyleSheet.create({
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = [
-  '#4A3AFF', '#34C759', '#FF6B35', '#8E44AD',
-  '#E91E63', '#00BCD4', '#FF9500', '#5856D6',
+  '#6D28D9', '#D97706', '#4F46E5', '#059669',
+  '#DC2626', '#2563EB', '#7C3AED', '#DB2777',
 ];
 
 function getInitials(fullName: string): string {
