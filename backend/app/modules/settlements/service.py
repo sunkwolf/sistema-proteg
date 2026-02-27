@@ -2,6 +2,7 @@
 Settlement service — Business logic for liquidaciones
 
 Claudy ✨ — 2026-02-27
+Updated to use employee_role_id (new employee structure)
 """
 
 from datetime import date, datetime
@@ -9,8 +10,14 @@ from decimal import Decimal
 from typing import List, Optional
 
 from sqlalchemy import select, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
+from app.models import (
+    Employee,
+    EmployeeRole,
+    CollectorProfile,
+    DepartmentType,
+)
 from app.models.settlement import (
     Settlement,
     SettlementDeduction,
@@ -28,7 +35,8 @@ from .schemas import (
     SettlementResponse,
     SettlementHistoryResponse,
     SettlementHistoryItem,
-    CollectorBasic,
+    SettlementPayRequest,
+    EmployeeBasic,
     PeriodInfo,
     CommissionBreakdown,
     CommissionDetail,
@@ -52,11 +60,38 @@ class SettlementService:
     def __init__(self, db: Session):
         self.db = db
     
+    # ─── Get Collectors ────────────────────────────────────────────────────────
+    
+    def get_active_collectors(self) -> List[EmployeeBasic]:
+        """Obtiene todos los cobradores activos."""
+        
+        query = (
+            select(EmployeeRole, Employee, CollectorProfile)
+            .join(Employee, EmployeeRole.employee_id == Employee.id)
+            .join(CollectorProfile, EmployeeRole.id == CollectorProfile.employee_role_id)
+            .where(
+                EmployeeRole.department == DepartmentType.COLLECTION,
+                EmployeeRole.is_active == True,
+            )
+        )
+        
+        results = self.db.execute(query).all()
+        
+        return [
+            EmployeeBasic(
+                employee_id=emp.id,
+                employee_role_id=role.id,
+                code=profile.code,
+                full_name=emp.full_name,
+            )
+            for role, emp, profile in results
+        ]
+    
     # ─── Preview ───────────────────────────────────────────────────────────────
     
     def get_preview(
         self,
-        collector_id: int,
+        employee_role_id: int,
         period_start: date,
         period_end: date,
     ) -> SettlementPreview:
@@ -66,15 +101,15 @@ class SettlementService:
         """
         
         # Obtener cobrador
-        collector = self._get_collector(collector_id)
-        if not collector:
-            raise ValueError(f"Cobrador {collector_id} no encontrado")
+        employee_data = self._get_collector_by_role(employee_role_id)
+        if not employee_data:
+            raise ValueError(f"Cobrador con role_id {employee_role_id} no encontrado")
         
         # Calcular comisiones
-        commissions = self._calculate_commissions(collector_id, period_start, period_end)
+        commissions = self._calculate_commissions(employee_role_id, period_start, period_end)
         
         # Calcular deducciones
-        deductions = self._calculate_deductions(collector_id, period_start, period_end)
+        deductions = self._calculate_deductions(employee_data['employee_id'], period_start, period_end)
         
         # Calcular neto
         net = commissions.total - deductions.total
@@ -92,13 +127,12 @@ class SettlementService:
             alerts.append("Saldo negativo — las deducciones superan las comisiones")
             has_alerts = True
         
-        # TODO: Verificar diferencias de efectivo sin justificar
-        
         return SettlementPreview(
-            collector=CollectorBasic(
-                id=collector.id,
-                code_name=collector.code_name,
-                full_name=collector.full_name,
+            employee=EmployeeBasic(
+                employee_id=employee_data['employee_id'],
+                employee_role_id=employee_role_id,
+                code=employee_data['code'],
+                full_name=employee_data['full_name'],
             ),
             period=PeriodInfo(
                 start=period_start,
@@ -115,6 +149,25 @@ class SettlementService:
             alerts=alerts,
         )
     
+    def get_all_previews(
+        self,
+        period_start: date,
+        period_end: date,
+    ) -> List[SettlementPreview]:
+        """Calcula previews para TODOS los cobradores activos."""
+        
+        collectors = self.get_active_collectors()
+        
+        previews = []
+        for collector in collectors:
+            try:
+                preview = self.get_preview(collector.employee_role_id, period_start, period_end)
+                previews.append(preview)
+            except ValueError:
+                continue
+        
+        return previews
+    
     # ─── Create Settlement ─────────────────────────────────────────────────────
     
     def create_settlement(
@@ -122,12 +175,12 @@ class SettlementService:
         data: SettlementCreate,
         paid_by_user_id: int,
     ) -> SettlementResponse:
-        """Crea y registra una liquidación como pagada."""
+        """Crea y registra una liquidación."""
         
         # Verificar que no exista ya
         existing = self.db.execute(
             select(Settlement).where(
-                Settlement.collector_id == data.collector_id,
+                Settlement.employee_role_id == data.employee_role_id,
                 Settlement.period_start == data.period_start,
                 Settlement.period_end == data.period_end,
             )
@@ -137,11 +190,25 @@ class SettlementService:
             raise ValueError("Ya existe una liquidación para este período")
         
         # Calcular montos
-        preview = self.get_preview(data.collector_id, data.period_start, data.period_end)
+        preview = self.get_preview(data.employee_role_id, data.period_start, data.period_end)
+        
+        # Determinar monto a pagar
+        pay_amount = data.amount if data.amount else preview.net_amount
+        
+        # Determinar status
+        if pay_amount >= preview.net_amount:
+            status = SettlementStatus.PAID
+            amount_paid = preview.net_amount
+        elif pay_amount > 0:
+            status = SettlementStatus.PARTIAL
+            amount_paid = pay_amount
+        else:
+            status = SettlementStatus.PENDING
+            amount_paid = Decimal("0")
         
         # Crear settlement
         settlement = Settlement(
-            collector_id=data.collector_id,
+            employee_role_id=data.employee_role_id,
             period_start=data.period_start,
             period_end=data.period_end,
             commission_regular=preview.commissions.regular.commission,
@@ -151,9 +218,10 @@ class SettlementService:
             deduction_loan=sum(d.amount for d in preview.deductions.items if d.type == DeductionType.LOAN),
             deduction_shortage=sum(d.amount for d in preview.deductions.items if d.type == DeductionType.SHORTAGE),
             deduction_other=sum(d.amount for d in preview.deductions.items if d.type in [DeductionType.ADVANCE, DeductionType.OTHER]),
-            status=SettlementStatus.PAID,
+            amount_paid=amount_paid,
+            status=status,
             payment_method=data.payment_method,
-            paid_at=datetime.utcnow(),
+            paid_at=datetime.utcnow() if status != SettlementStatus.PENDING else None,
             paid_by=paid_by_user_id,
             notes=data.notes,
         )
@@ -170,11 +238,9 @@ class SettlementService:
                 loan_id=deduction.loan_id,
             ))
         
-        # Actualizar cuotas de préstamos
-        self._update_loan_payments(data.collector_id, data.period_start, data.period_end)
-        
-        # Marcar pagos como liquidados
-        # TODO: Implementar cuando tengamos la relación con payments
+        # Actualizar cuotas de préstamos si se pagó completo
+        if status == SettlementStatus.PAID:
+            self._update_loan_payments(preview.employee.employee_id, data.period_start, data.period_end)
         
         self.db.commit()
         self.db.refresh(settlement)
@@ -189,9 +255,9 @@ class SettlementService:
         """Crea liquidaciones para múltiples cobradores."""
         
         results = []
-        for collector_id in data.collector_ids:
+        for role_id in data.employee_role_ids:
             single = SettlementCreate(
-                collector_id=collector_id,
+                employee_role_id=role_id,
                 period_start=data.period_start,
                 period_end=data.period_end,
                 payment_method=data.payment_method,
@@ -202,22 +268,67 @@ class SettlementService:
         
         return results
     
+    # ─── Pay Settlement ────────────────────────────────────────────────────────
+    
+    def pay_settlement(
+        self,
+        settlement_id: int,
+        data: SettlementPayRequest,
+        paid_by_user_id: int,
+    ) -> SettlementResponse:
+        """Registra un pago (parcial o total) en una liquidación existente."""
+        
+        settlement = self.db.get(Settlement, settlement_id)
+        if not settlement:
+            raise ValueError("Liquidación no encontrada")
+        
+        if settlement.status == SettlementStatus.PAID:
+            raise ValueError("Esta liquidación ya está completamente pagada")
+        
+        # Calcular nuevo monto pagado
+        new_amount_paid = settlement.amount_paid + data.amount
+        
+        # Actualizar settlement
+        settlement.amount_paid = new_amount_paid
+        settlement.payment_method = data.payment_method
+        settlement.paid_by = paid_by_user_id
+        
+        if data.notes:
+            existing_notes = settlement.notes or ""
+            settlement.notes = f"{existing_notes}\n[Pago] {data.notes}".strip()
+        
+        # Actualizar status
+        if new_amount_paid >= settlement.net_amount:
+            settlement.status = SettlementStatus.PAID
+            settlement.paid_at = datetime.utcnow()
+            # Actualizar préstamos
+            employee_data = self._get_collector_by_role(settlement.employee_role_id)
+            if employee_data:
+                self._update_loan_payments(employee_data['employee_id'], settlement.period_start, settlement.period_end)
+        else:
+            settlement.status = SettlementStatus.PARTIAL
+        
+        self.db.commit()
+        self.db.refresh(settlement)
+        
+        return self._to_response(settlement)
+    
     # ─── History ───────────────────────────────────────────────────────────────
     
     def get_history(
         self,
-        collector_id: int,
+        employee_role_id: int,
         limit: int = 10,
     ) -> SettlementHistoryResponse:
         """Obtiene el historial de liquidaciones de un cobrador."""
         
-        collector = self._get_collector(collector_id)
-        if not collector:
-            raise ValueError(f"Cobrador {collector_id} no encontrado")
+        employee_data = self._get_collector_by_role(employee_role_id)
+        if not employee_data:
+            raise ValueError(f"Cobrador con role_id {employee_role_id} no encontrado")
         
         settlements = self.db.execute(
             select(Settlement)
-            .where(Settlement.collector_id == collector_id)
+            .where(Settlement.employee_role_id == employee_role_id)
             .order_by(Settlement.period_end.desc())
             .limit(limit)
         ).scalars().all()
@@ -229,19 +340,21 @@ class SettlementService:
                 period_end=s.period_end,
                 period_label=self._format_period_label(s.period_start, s.period_end),
                 net_amount=s.net_amount,
+                amount_paid=s.amount_paid,
                 status=s.status,
                 paid_at=s.paid_at,
             )
             for s in settlements
         ]
         
-        total_paid = sum(s.net_amount for s in settlements if s.status == SettlementStatus.PAID)
+        total_paid = sum(s.amount_paid for s in settlements)
         
         return SettlementHistoryResponse(
-            collector=CollectorBasic(
-                id=collector.id,
-                code_name=collector.code_name,
-                full_name=collector.full_name,
+            employee=EmployeeBasic(
+                employee_id=employee_data['employee_id'],
+                employee_role_id=employee_role_id,
+                code=employee_data['code'],
+                full_name=employee_data['full_name'],
             ),
             items=items,
             total_paid=total_paid,
@@ -257,7 +370,7 @@ class SettlementService:
             raise ValueError("Liquidación no encontrada")
         
         if settlement.status == SettlementStatus.PAID:
-            raise ValueError("No se puede modificar una liquidación ya pagada")
+            raise ValueError("No se puede modificar una liquidación ya pagada completamente")
         
         deduction = SettlementDeduction(
             settlement_id=data.settlement_id,
@@ -286,27 +399,31 @@ class SettlementService:
     
     # ─── Private Helpers ───────────────────────────────────────────────────────
     
-    def _get_collector(self, collector_id: int):
-        """Obtiene un cobrador por ID."""
-        # TODO: Usar el modelo real de Collector
-        from sqlalchemy import text
-        result = self.db.execute(
-            text("SELECT id, code_name, full_name FROM collector WHERE id = :id"),
-            {"id": collector_id}
-        ).fetchone()
+    def _get_collector_by_role(self, employee_role_id: int) -> Optional[dict]:
+        """Obtiene datos de un cobrador por su employee_role_id."""
+        
+        query = (
+            select(EmployeeRole, Employee, CollectorProfile)
+            .join(Employee, EmployeeRole.employee_id == Employee.id)
+            .join(CollectorProfile, EmployeeRole.id == CollectorProfile.employee_role_id)
+            .where(EmployeeRole.id == employee_role_id)
+        )
+        
+        result = self.db.execute(query).first()
         
         if result:
-            class CollectorRow:
-                def __init__(self, row):
-                    self.id = row[0]
-                    self.code_name = row[1]
-                    self.full_name = row[2]
-            return CollectorRow(result)
+            role, emp, profile = result
+            return {
+                'employee_id': emp.id,
+                'employee_role_id': role.id,
+                'code': profile.code,
+                'full_name': emp.full_name,
+            }
         return None
     
     def _calculate_commissions(
         self,
-        collector_id: int,
+        employee_role_id: int,
         period_start: date,
         period_end: date,
     ) -> CommissionBreakdown:
@@ -339,7 +456,7 @@ class SettlementService:
     
     def _calculate_deductions(
         self,
-        collector_id: int,
+        employee_id: int,
         period_start: date,
         period_end: date,
     ) -> DeductionBreakdown:
@@ -362,7 +479,7 @@ class SettlementService:
         loans = self.db.execute(
             select(EmployeeLoan)
             .where(
-                EmployeeLoan.collector_id == collector_id,
+                EmployeeLoan.employee_id == employee_id,
                 EmployeeLoan.status == LoanStatus.ACTIVE,
             )
         ).scalars().all()
@@ -376,16 +493,13 @@ class SettlementService:
                 loan_id=loan.id,
             ))
         
-        # 3. Diferencias de efectivo
-        # TODO: Query a entregas_efectivo
-        
         total = sum(item.amount for item in items)
         
         return DeductionBreakdown(items=items, total=total)
     
     def _update_loan_payments(
         self,
-        collector_id: int,
+        employee_id: int,
         period_start: date,
         period_end: date,
     ):
@@ -394,7 +508,7 @@ class SettlementService:
         loans = self.db.execute(
             select(EmployeeLoan)
             .where(
-                EmployeeLoan.collector_id == collector_id,
+                EmployeeLoan.employee_id == employee_id,
                 EmployeeLoan.status == LoanStatus.ACTIVE,
             )
         ).scalars().all()
@@ -424,14 +538,15 @@ class SettlementService:
     def _to_response(self, settlement: Settlement) -> SettlementResponse:
         """Convierte un Settlement a SettlementResponse."""
         
-        collector = self._get_collector(settlement.collector_id)
+        employee_data = self._get_collector_by_role(settlement.employee_role_id)
         
         return SettlementResponse(
             id=settlement.id,
-            collector=CollectorBasic(
-                id=collector.id,
-                code_name=collector.code_name,
-                full_name=collector.full_name,
+            employee=EmployeeBasic(
+                employee_id=employee_data['employee_id'],
+                employee_role_id=employee_data['employee_role_id'],
+                code=employee_data['code'],
+                full_name=employee_data['full_name'],
             ),
             period_start=settlement.period_start,
             period_end=settlement.period_end,
@@ -445,6 +560,8 @@ class SettlementService:
             deduction_other=settlement.deduction_other,
             total_deductions=settlement.total_deductions,
             net_amount=settlement.net_amount,
+            amount_paid=settlement.amount_paid,
+            amount_remaining=settlement.amount_remaining,
             status=settlement.status,
             payment_method=settlement.payment_method,
             paid_at=settlement.paid_at,

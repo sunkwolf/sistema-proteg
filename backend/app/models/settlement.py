@@ -2,6 +2,7 @@
 Models for settlements (liquidaciones)
 
 Claudy ✨ — 2026-02-27
+Updated to use employee_role_id (new employee structure)
 """
 
 from datetime import date, datetime
@@ -29,6 +30,7 @@ from .base import Base, TimestampMixin
 
 class SettlementStatus(str, Enum):
     PENDING = "pending"
+    PARTIAL = "partial"
     PAID = "paid"
 
 
@@ -54,11 +56,21 @@ class LoanStatus(str, Enum):
 # ─── Models ────────────────────────────────────────────────────────────────────
 
 class EmployeeLoan(Base, TimestampMixin):
-    """Préstamos a cobradores/vendedores con pago quincenal."""
+    """
+    Préstamos a empleados con pago quincenal.
+    
+    Usa employee_id (nueva estructura) para nuevos registros.
+    collector_id/seller_id son legacy y serán removidos.
+    """
     
     __tablename__ = "employee_loan"
     
     id: Mapped[int] = mapped_column(primary_key=True)
+    
+    # Nueva estructura: FK a employee
+    employee_id: Mapped[Optional[int]] = mapped_column(ForeignKey("employee.id"))
+    
+    # Legacy: mantener temporalmente para migración
     collector_id: Mapped[Optional[int]] = mapped_column(ForeignKey("collector.id"))
     seller_id: Mapped[Optional[int]] = mapped_column(ForeignKey("seller.id"))
     
@@ -75,29 +87,32 @@ class EmployeeLoan(Base, TimestampMixin):
     notes: Mapped[Optional[str]] = mapped_column(Text)
     
     # Relationships
-    collector: Mapped[Optional["Collector"]] = relationship(back_populates="loans")
-    seller: Mapped[Optional["Seller"]] = relationship(back_populates="loans")
+    employee: Mapped[Optional["Employee"]] = relationship(back_populates="loans")
     deductions: Mapped[List["SettlementDeduction"]] = relationship(back_populates="loan")
     
     __table_args__ = (
-        CheckConstraint(
-            "(collector_id IS NOT NULL AND seller_id IS NULL) OR "
-            "(collector_id IS NULL AND seller_id IS NOT NULL)",
-            name="chk_loan_employee"
-        ),
-        Index("idx_employee_loan_collector", "collector_id", postgresql_where="collector_id IS NOT NULL"),
-        Index("idx_employee_loan_seller", "seller_id", postgresql_where="seller_id IS NOT NULL"),
+        Index("idx_employee_loan_employee", "employee_id", postgresql_where="employee_id IS NOT NULL"),
         Index("idx_employee_loan_status", "status"),
     )
 
 
 class Settlement(Base, TimestampMixin):
-    """Liquidación quincenal de un cobrador."""
+    """
+    Liquidación quincenal de un cobrador.
+    
+    Usa employee_role_id (nueva estructura) para nuevos registros.
+    collector_id es legacy y será removido.
+    """
     
     __tablename__ = "settlement"
     
     id: Mapped[int] = mapped_column(primary_key=True)
-    collector_id: Mapped[int] = mapped_column(ForeignKey("collector.id"))
+    
+    # Nueva estructura: FK a employee_role (rol de cobrador)
+    employee_role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("employee_role.id"))
+    
+    # Legacy: mantener temporalmente para migración
+    collector_id: Mapped[Optional[int]] = mapped_column(ForeignKey("collector.id"))
     
     # Período
     period_start: Mapped[date]
@@ -131,6 +146,9 @@ class Settlement(Base, TimestampMixin):
         )
     )
     
+    # Pagos parciales
+    amount_paid: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
+    
     # Estado y pago
     status: Mapped[SettlementStatus] = mapped_column(default=SettlementStatus.PENDING)
     payment_method: Mapped[Optional[SettlementMethod]]
@@ -139,7 +157,7 @@ class Settlement(Base, TimestampMixin):
     notes: Mapped[Optional[str]] = mapped_column(Text)
     
     # Relationships
-    collector: Mapped["Collector"] = relationship(back_populates="settlements")
+    employee_role: Mapped[Optional["EmployeeRole"]] = relationship(back_populates="settlements")
     deductions: Mapped[List["SettlementDeduction"]] = relationship(
         back_populates="settlement", 
         cascade="all, delete-orphan"
@@ -151,11 +169,16 @@ class Settlement(Base, TimestampMixin):
     paid_by_user: Mapped[Optional["AppUser"]] = relationship()
     
     __table_args__ = (
-        UniqueConstraint("collector_id", "period_start", "period_end", name="uq_settlement_period"),
-        Index("idx_settlement_collector", "collector_id"),
+        UniqueConstraint("employee_role_id", "period_start", "period_end", name="uq_settlement_period_role"),
+        Index("idx_settlement_employee_role", "employee_role_id", postgresql_where="employee_role_id IS NOT NULL"),
         Index("idx_settlement_period", "period_start", "period_end"),
         Index("idx_settlement_status", "status"),
     )
+    
+    @property
+    def amount_remaining(self) -> Decimal:
+        """Monto que falta por pagar."""
+        return self.net_amount - self.amount_paid
 
 
 class SettlementDeduction(Base):

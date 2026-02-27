@@ -2,6 +2,7 @@
 Schemas for settlements
 
 Claudy ✨ — 2026-02-27
+Updated to use employee_role_id (new structure)
 """
 
 from datetime import date, datetime
@@ -12,12 +13,15 @@ from pydantic import BaseModel, Field
 from app.models.settlement import SettlementStatus, SettlementMethod, DeductionType
 
 
-# ─── Collector Info ────────────────────────────────────────────────────────────
+# ─── Employee Info ─────────────────────────────────────────────────────────────
 
-class CollectorBasic(BaseModel):
-    id: int
-    code_name: str
-    full_name: Optional[str]
+class EmployeeBasic(BaseModel):
+    """Información básica del empleado."""
+    
+    employee_id: int
+    employee_role_id: int
+    code: str = Field(description="Código del cobrador: C1, C2...")
+    full_name: str
     
     class Config:
         from_attributes = True
@@ -68,10 +72,10 @@ class DeductionBreakdown(BaseModel):
 class SettlementPreview(BaseModel):
     """
     Preview de liquidación — calcula sin guardar.
-    Usado por GET /settlements/preview/{collector_id}
+    Usado por GET /settlements/preview/{employee_role_id}
     """
     
-    collector: CollectorBasic
+    employee: EmployeeBasic
     period: "PeriodInfo"
     
     # Metas y progreso
@@ -104,17 +108,18 @@ class PeriodInfo(BaseModel):
 class SettlementCreate(BaseModel):
     """Datos para crear/registrar una liquidación."""
     
-    collector_id: int
+    employee_role_id: int
     period_start: date
     period_end: date
     payment_method: SettlementMethod
+    amount: Optional[Decimal] = Field(None, description="Monto a pagar (para pagos parciales). None = pago total.")
     notes: Optional[str] = None
 
 
 class SettlementBatchCreate(BaseModel):
     """Liquidación masiva de múltiples cobradores."""
     
-    collector_ids: List[int]
+    employee_role_ids: List[int]
     period_start: date
     period_end: date
     payment_method: SettlementMethod
@@ -127,7 +132,7 @@ class SettlementResponse(BaseModel):
     """Respuesta de una liquidación creada/consultada."""
     
     id: int
-    collector: CollectorBasic
+    employee: EmployeeBasic
     
     period_start: date
     period_end: date
@@ -144,6 +149,8 @@ class SettlementResponse(BaseModel):
     total_deductions: Decimal
     
     net_amount: Decimal
+    amount_paid: Decimal
+    amount_remaining: Decimal
     
     status: SettlementStatus
     payment_method: Optional[SettlementMethod]
@@ -166,6 +173,7 @@ class SettlementHistoryItem(BaseModel):
     period_end: date
     period_label: str
     net_amount: Decimal
+    amount_paid: Decimal
     status: SettlementStatus
     paid_at: Optional[datetime]
     
@@ -176,7 +184,7 @@ class SettlementHistoryItem(BaseModel):
 class SettlementHistoryResponse(BaseModel):
     """Historial de liquidaciones de un cobrador."""
     
-    collector: CollectorBasic
+    employee: EmployeeBasic
     items: List[SettlementHistoryItem]
     total_paid: Decimal = Field(description="Total histórico pagado")
 
@@ -190,6 +198,16 @@ class ManualDeductionCreate(BaseModel):
     type: DeductionType
     concept: str
     amount: Decimal
+    notes: Optional[str] = None
+
+
+# ─── Pay Settlement ────────────────────────────────────────────────────────────
+
+class SettlementPayRequest(BaseModel):
+    """Registrar un pago (parcial o total) en una liquidación."""
+    
+    amount: Decimal = Field(description="Monto a pagar")
+    payment_method: SettlementMethod
     notes: Optional[str] = None
 
 
