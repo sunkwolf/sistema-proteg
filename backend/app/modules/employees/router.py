@@ -7,7 +7,7 @@ Claudy ✨ — 2026-02-27
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from app.database import get_db
+from app.core.database import get_db
 from app.models.employee import Employee, EntityStatus, DepartmentType
 from .schemas import EmployeeListResponse, EmployeeSummary
 

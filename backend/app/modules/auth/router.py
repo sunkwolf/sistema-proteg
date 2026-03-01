@@ -6,7 +6,7 @@ Claudy ✨ — 2026-02-27
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.database import get_db
+from app.core.database import get_db
 from app.modules.auth.schemas import LoginRequest, TokenResponse
 from app.modules.auth.service import authenticate_user, create_user_tokens
 
