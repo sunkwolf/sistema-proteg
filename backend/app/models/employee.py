@@ -94,7 +94,7 @@ class Employee(Base, TimestampMixin):
     status: Mapped[EntityStatus] = mapped_column(default=EntityStatus.ACTIVE)
     
     # Relationships
-    roles: Mapped[List["EmployeeRole"]] = relationship(back_populates="employee", cascade="all, delete-orphan")
+    roles: Mapped[List["EmployeeRole"]] = relationship(back_populates="employee", cascade="all, delete-orphan", foreign_keys="[EmployeeRole.employee_id]")
     loans: Mapped[List["EmployeeLoan"]] = relationship(back_populates="employee")
     user: Mapped[Optional["AppUser"]] = relationship(back_populates="employee")
     
