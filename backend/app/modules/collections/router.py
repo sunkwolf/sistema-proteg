@@ -5,6 +5,7 @@ Claudy ✨ + Fer — 2026-03-02
 Endpoints for the collector mobile app.
 """
 from typing import Optional
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -80,10 +81,44 @@ async def get_cash(
 
 # ── Proposals (stubs — next phase) ──────────────────────────────────────────
 
+class PaymentRegisterRequest(BaseModel):
+    folio: str
+    payment_number: int
+    amount: str
+    method: str  # cash, deposit, transfer
+    receipt_number: str
+    collector_code: str = "EDGAR"  # TODO: from JWT
+
+
 @router.post("/proposals")
-async def create_proposal():
-    """TODO: Create a payment proposal from mobile app."""
-    raise HTTPException(status_code=501, detail="Próximamente")
+async def create_proposal(
+    req: PaymentRegisterRequest,
+    svc: CollectionService = Depends(get_service),
+):
+    """Register a payment collection from the mobile app."""
+    try:
+        # Map frontend method names to backend enum values
+        method_map = {
+            "efectivo": "cash",
+            "deposito": "deposit",
+            "transferencia": "transfer",
+            "cash": "cash",
+            "deposit": "deposit",
+            "transfer": "transfer",
+        }
+        method = method_map.get(req.method, req.method)
+
+        result = await svc.register_payment(
+            folio=int(req.folio),
+            payment_number=req.payment_number,
+            amount=float(req.amount),
+            method=method,
+            receipt_number=req.receipt_number,
+            collector_code=req.collector_code,
+        )
+        return ApiResponse(data=result)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/proposals/mine")

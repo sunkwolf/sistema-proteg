@@ -16,21 +16,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing } from '@/theme';
 import { formatMoney } from '@/utils/format';
 import { PaymentMethod } from '@/types';
+import { useFolioDetail } from '@/hooks/useCollections';
+import { createProposal } from '@/api/collections';
 
-// ─── Mock ────────────────────────────────────────────────────────────────────
-const MOCK = {
-  folio: '18405',
-  client: 'María López',
-  payment_number: 3,
-  total_payments: 7,
-  expected: '1200.00',
-  on_time: true,
-  // para abono parcial
-  total: '1200.00',
-  paid: '500.00',
-  remaining: '700.00',
-  abono_seq: 2,
-};
+// Data comes from API via useFolioDetail hook
 
 const METHODS: { key: PaymentMethod; icon: string; label: string }[] = [
   { key: 'efectivo', icon: '💵', label: 'EFECTIVO' },
@@ -42,6 +31,20 @@ const METHODS: { key: PaymentMethod; icon: string; label: string }[] = [
 export default function RegistrarCobroScreen() {
   const { folio, type } = useLocalSearchParams<{ folio: string; type?: string }>();
   const router = useRouter();
+  const { data: folioData } = useFolioDetail(folio || '');
+
+  const MOCK = {
+    folio: folioData?.folio || folio || '',
+    client: folioData?.client?.name || 'Cargando...',
+    payment_number: folioData?.current_payment?.number || 1,
+    total_payments: folioData?.current_payment?.total || 7,
+    expected: folioData?.current_payment?.amount || '0.00',
+    on_time: (folioData?.current_payment?.days_overdue || 0) <= 0,
+    total: folioData?.current_payment?.amount || '0.00',
+    paid: folioData?.current_payment?.partial_paid || '0.00',
+    remaining: folioData?.current_payment?.partial_remaining || folioData?.current_payment?.amount || '0.00',
+    abono_seq: folioData?.current_payment?.partial_seq || 0,
+  };
 
   const mode: 'full' | 'partial' = type === 'partial' ? 'partial' : 'full';
   const [amount, setAmount] = useState('');
@@ -86,7 +89,19 @@ export default function RegistrarCobroScreen() {
           setGpsLocation('Tonalá, Jalisco');
         }
       }
-      // TODO: API call (createProposal / createAbono)
+      // Call the real API
+      await createProposal({
+        folio: folio || MOCK.folio,
+        payment_number: MOCK.payment_number,
+        amount: isPartial ? amount : MOCK.expected,
+        method,
+        receipt_number: receiptNumber,
+        receipt_photo_url: photoUri || undefined,
+        lat: 0,
+        lng: 0,
+        is_partial: isPartial,
+      });
+
       router.replace({
         pathname: '/(cobrador)/cobros/exito',
         params: {

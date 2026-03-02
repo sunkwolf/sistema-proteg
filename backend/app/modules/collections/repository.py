@@ -146,3 +146,50 @@ class CollectionRepository:
             .where(Payment.policy_id == policy_id)
         )
         return result.scalar_one()
+
+    async def get_payment_by_policy_and_number(
+        self, policy_id: int, payment_number: int
+    ) -> Optional[Payment]:
+        result = await self.session.execute(
+            select(Payment)
+            .where(Payment.policy_id == policy_id)
+            .where(Payment.payment_number == payment_number)
+        )
+        return result.scalar_one_or_none()
+
+    async def create_payment_proposal(
+        self,
+        payment: Payment,
+        amount: float,
+        method: str,
+        receipt_number: str,
+        collector_id: int,
+        user_id: Optional[int] = None,
+    ):
+        from app.models.policy import Payment as PaymentModel
+        from sqlalchemy import update
+
+        # Update the payment record
+        payment.actual_date = date.today()
+        payment.amount = amount
+        payment.payment_method = method
+        payment.receipt_number = receipt_number
+        payment.status = "paid"
+        payment.collector_id = collector_id
+
+        self.session.add(payment)
+        await self.session.flush()
+        return payment
+
+    async def get_recent_proposals(
+        self, collector_id: int, limit: int = 20
+    ) -> List[Payment]:
+        """Get recently collected payments for a collector."""
+        result = await self.session.execute(
+            select(Payment)
+            .where(Payment.collector_id == collector_id)
+            .where(Payment.status == "paid")
+            .order_by(Payment.actual_date.desc(), Payment.updated_at.desc())
+            .limit(limit)
+        )
+        return result.scalars().all()

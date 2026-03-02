@@ -214,3 +214,53 @@ class CollectionService:
         """Cash pending to deliver to office."""
         # TODO: implement when proposals are working
         return CashPending()
+
+    async def register_payment(
+        self,
+        folio: int,
+        payment_number: int,
+        amount: float,
+        method: str,
+        receipt_number: str,
+        collector_code: str,
+    ) -> dict:
+        """Register a payment collection (proposal → direct apply for now)."""
+        # Get policy
+        policy = await self.repo.get_policy_by_folio(folio)
+        if not policy:
+            raise ValueError(f"Folio {folio} no encontrado")
+
+        # Get collector
+        collector = await self.repo.get_collector_by_code(collector_code)
+        if not collector:
+            raise ValueError(f"Cobrador {collector_code} no encontrado")
+
+        # Get the specific payment
+        payment = await self.repo.get_payment_by_policy_and_number(
+            policy.id, payment_number
+        )
+        if not payment:
+            raise ValueError(f"Pago #{payment_number} no encontrado para folio {folio}")
+
+        if payment.status == "paid":
+            raise ValueError(f"Pago #{payment_number} ya está pagado")
+
+        # Register the payment
+        updated = await self.repo.create_payment_proposal(
+            payment=payment,
+            amount=amount,
+            method=method,
+            receipt_number=receipt_number,
+            collector_id=collector.id,
+        )
+
+        return {
+            "id": updated.id,
+            "folio": str(folio),
+            "payment_number": payment_number,
+            "amount": _format_money(amount),
+            "method": method,
+            "receipt_number": receipt_number,
+            "status": "paid",
+            "message": f"Pago #{payment_number} registrado exitosamente",
+        }
