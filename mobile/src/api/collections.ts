@@ -1,3 +1,9 @@
+/**
+ * API — Collections (Cobranza)
+ * Claudy ✨ + Fer — 2026-03-02
+ *
+ * Connects mobile app to the collections backend module.
+ */
 import api from './client';
 import {
   ApiResponse,
@@ -13,13 +19,15 @@ import {
 } from '@/types';
 
 // ── Dashboard ───────────────────────────
-export async function getDashboard(): Promise<DashboardCobrador> {
-  const { data } = await api.get<ApiResponse<DashboardCobrador>>('/collections/dashboard');
+export async function getDashboard(collectorCode?: string): Promise<DashboardCobrador> {
+  const params = collectorCode ? { collector_code: collectorCode } : {};
+  const { data } = await api.get<ApiResponse<DashboardCobrador>>('/collections/dashboard', { params });
   return data.data;
 }
 
 // ── Folios ──────────────────────────────
 export async function getFolios(params?: {
+  collector_code?: string;
   status?: string;
   search?: string;
   sort?: string;
@@ -55,14 +63,16 @@ export async function createVisitNotice(payload: VisitNoticeCreate): Promise<Vis
 }
 
 // ── Efectivo ────────────────────────────
-export async function getCashPending(): Promise<CashPending> {
-  const { data } = await api.get<ApiResponse<CashPending>>('/collections/cash');
+export async function getCashPending(collectorCode?: string): Promise<CashPending> {
+  const params = collectorCode ? { collector_code: collectorCode } : {};
+  const { data } = await api.get<ApiResponse<CashPending>>('/collections/cash', { params });
   return data.data;
 }
 
 // ── Ruta ────────────────────────────────
-export async function getRoute(): Promise<RouteStop[]> {
-  const { data } = await api.get<ApiResponse<RouteStop[]>>('/collections/route');
+export async function getRoute(collectorCode?: string): Promise<RouteStop[]> {
+  const params = collectorCode ? { collector_code: collectorCode } : {};
+  const { data } = await api.get<ApiResponse<RouteStop[]>>('/collections/route', { params });
   return data.data;
 }
 

@@ -1,6 +1,6 @@
-// Base URL del backend — se sobreescribe con variable de entorno en producción
-// Por ahora apunta al VPS vía WireGuard (pendiente de configurar)
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+// Base URL del backend — sistema.protegrt.com con API bajo /api/v1
+// En desarrollo local, sobreescribir con EXPO_PUBLIC_API_URL
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://sistema.protegrt.com/api/v1';
 
 export const AUTH = {
   TOKEN_KEY: 'protegrt_token',

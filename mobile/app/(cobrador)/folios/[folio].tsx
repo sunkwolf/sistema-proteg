@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -12,45 +12,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, spacing, typography } from '@/theme';
 import { formatMoney, formatDateShort } from '@/utils/format';
+import { useFolioDetail } from '@/hooks/useCollections';
 import { FolioDetail } from '@/types';
 
-// TODO: reemplazar con useFolioDetail(folio) hook de TanStack Query
-const MOCK_DETAIL: FolioDetail = {
-  folio: '18405',
-  client: {
-    name: 'María López García',
-    phone: '33-1234-5678',
-    address: 'Av. Hidalgo 120, Tonalá, Jal.',
-    lat: 20.6258,
-    lng: -103.235,
-  },
-  vehicle: {
-    description: 'Toyota Corolla 2020',
-    plates: 'ABC-123-D',
-    color: 'Blanco',
-  },
-  policy: {
-    coverage_type: 'AMPLIA',
-    start_date: '2026-02-01',
-    end_date: '2027-02-01',
-    status: 'Activa',
-  },
-  current_payment: {
-    number: 3,
-    total: 7,
-    amount: '1200.00',
-    due_date: '2026-02-05',
-    days_overdue: 15,
-    partial_paid: '0.00',
-    partial_remaining: '1200.00',
-    partial_seq: 0,
-  },
-};
 
 export default function FolioDetailScreen() {
   const { folio } = useLocalSearchParams<{ folio: string }>();
   const router = useRouter();
-  const [data] = useState(MOCK_DETAIL);
+  const { data, isLoading } = useFolioDetail(folio!);
+  if (isLoading || !data) {
+    return (
+      <SafeAreaView edges={["top"]} style={styles.safe}>
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={24} color={colors.white} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Cargando...</Text>
+          <View style={{ width: 40 }} />
+        </View>
+      </SafeAreaView>
+    );
+  }
   const p = data.current_payment;
   const hasPriorPartials = parseFloat(p.partial_paid) > 0;
 

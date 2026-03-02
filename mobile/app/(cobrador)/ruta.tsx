@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -13,18 +13,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, spacing } from '@/theme';
 import { formatDateFull } from '@/utils/format';
+import { useRoute } from '@/hooks/useCollections';
 import { RouteStop } from '@/types';
 
-const MOCK_STOPS: RouteStop[] = [
-  { order: 1, folio: '18405', client_name: 'María L.', address: 'Av. Hidalgo 120', lat: 20.6258, lng: -103.235, status: 'completed', time: '09:30 AM' },
-  { order: 2, folio: '18502', client_name: 'Ana G.', address: 'Reforma 45, Centro', lat: 20.63, lng: -103.24, status: 'next', time: null },
-  { order: 3, folio: '18510', client_name: 'Roberto S.', address: 'Juárez 88', lat: 20.635, lng: -103.245, status: 'pending', time: '10:30 AM' },
-  { order: 4, folio: '18615', client_name: 'Carmen R.', address: 'Independencia 200', lat: 20.64, lng: -103.25, status: 'pending', time: '11:00 AM' },
-];
 
 export default function RutaScreen() {
   const router = useRouter();
-  const [stops] = useState(MOCK_STOPS);
+  const { data: stops = [], isLoading } = useRoute();
   const nextStop = stops.find(s => s.status === 'next');
 
   const startNavigation = () => {
