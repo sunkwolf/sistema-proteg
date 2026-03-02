@@ -3,8 +3,11 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+# Fix backslash-escaped passwords from EasyPanel env vars
+_db_url = settings.DATABASE_URL.replace("\\!", "!")
+
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    _db_url,
     echo=settings.DB_ECHO,
     pool_pre_ping=True,
     pool_size=20,
