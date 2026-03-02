@@ -51,7 +51,7 @@ def _computed_policy_status(policy, payments) -> str:
         return "pending"
 
     has_overdue = any(
-        p.status == "pending" and p.due_date and p.due_date < today
+        p.status not in ("paid", "cancelled") and p.due_date and p.due_date < today
         for p in payments
     )
     if has_overdue:

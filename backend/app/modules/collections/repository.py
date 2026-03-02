@@ -47,7 +47,7 @@ class CollectionRepository:
                 Payment.policy_id,
                 func.min(Payment.payment_number).label("next_number"),
             )
-            .where(Payment.status == "pending")
+            .where(Payment.status.notin_(['paid', 'cancelled']))
             .group_by(Payment.policy_id)
             .subquery()
         )
