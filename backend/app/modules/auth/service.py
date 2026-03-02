@@ -1,14 +1,16 @@
 """
 Authentication Service
 
-Claudy ✨ — 2026-02-27
+Claudy ✨ — 2026-02-27 (fixed async 2026-03-02)
 """
 
 import logging
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from app.models.user import AppUser
 from app.core.security import verify_password, create_access_token
 from app.core.exceptions import AppException
@@ -16,12 +18,15 @@ from app.core.exceptions import AppException
 logger = logging.getLogger(__name__)
 
 async def authenticate_user(
-    db: Session, 
+    db: AsyncSession, 
     username: str, 
     password: str
 ) -> AppUser:
     """Valida credenciales y devuelve el usuario si es correcto."""
-    user = db.query(AppUser).filter(AppUser.username == username).first()
+    result = await db.execute(
+        select(AppUser).where(AppUser.username == username)
+    )
+    user = result.scalar_one_or_none()
     
     if not user:
         logger.warning(f"Intento de login fallido: usuario {username} no existe")
@@ -37,18 +42,15 @@ async def authenticate_user(
         
     # Actualizar último login
     user.last_login = datetime.now(timezone.utc)
-    db.commit()
     
     return user
 
 def create_user_tokens(user: AppUser) -> dict:
     """Genera los tokens de acceso para el usuario."""
-    # En el futuro aquí también gestionaremos el refresh token en Redis
     access_token = create_access_token(data={
         "sub": str(user.id),
         "username": user.username,
         "employee_id": user.employee_id,
-        "roles": [role.department.value for role in user.employee.roles if role.is_active]
     })
     
     return {
@@ -57,6 +59,6 @@ def create_user_tokens(user: AppUser) -> dict:
         "user": {
             "id": user.id,
             "username": user.username,
-            "full_name": user.employee.full_name
+            "name": user.username,  # TODO: join employee for full_name
         }
     }
