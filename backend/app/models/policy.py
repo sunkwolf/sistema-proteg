@@ -10,7 +10,7 @@ from typing import Optional, List
 from enum import Enum as PyEnum
 from sqlalchemy import (
     String, Date, Integer, Numeric, Boolean, ForeignKey,
-    DateTime, func, BigInteger, text,
+    DateTime, func, BigInteger, text, Enum as SAEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base, TimestampMixin
@@ -74,7 +74,7 @@ class Seller(Base, TimestampMixin):
     full_name: Mapped[str] = mapped_column(String(255))
     phone: Mapped[Optional[str]] = mapped_column(String(20))
     telegram_id: Mapped[Optional[int]] = mapped_column(BigInteger)
-    status: Mapped[str] = mapped_column(String(20), server_default="active")
+    status: Mapped[str] = mapped_column(SAEnum('active','inactive', name='entity_status_type', create_type=False), server_default="active")
     seller_class: Mapped[str] = mapped_column("class", String(20), server_default="collaborator")
     sales_target: Mapped[Optional[int]] = mapped_column(Integer)
 
@@ -87,7 +87,7 @@ class Collector(Base, TimestampMixin):
     full_name: Mapped[Optional[str]] = mapped_column(String(255))
     phone: Mapped[Optional[str]] = mapped_column(String(20))
     receipt_limit: Mapped[int] = mapped_column(Integer, server_default="50")
-    status: Mapped[str] = mapped_column(String(20), server_default="active")
+    status: Mapped[str] = mapped_column(SAEnum('active','inactive', name='entity_status_type', create_type=False), server_default="active")
 
 
 class Vehicle(Base, TimestampMixin):
@@ -143,7 +143,7 @@ class Policy(Base, TimestampMixin):
     effective_date: Mapped[Optional[date]] = mapped_column(Date)
     expiration_date: Mapped[Optional[date]] = mapped_column(Date)
     elaboration_date: Mapped[Optional[date]] = mapped_column(Date)
-    status: Mapped[str] = mapped_column(String(20), server_default="active")
+    status: Mapped[str] = mapped_column(SAEnum('active','pending','morosa','pre_effective','expired','cancelled','suspended','no_status', name='policy_status_type', create_type=False), server_default="active")
     payment_plan: Mapped[Optional[str]] = mapped_column(String(30))
     prima_total: Mapped[Optional[float]] = mapped_column(Numeric(12, 2))
     comments: Mapped[Optional[str]] = mapped_column(String)
@@ -215,7 +215,7 @@ class Payment(Base, TimestampMixin):
     office_delivery_date: Mapped[Optional[date]] = mapped_column(Date)
     policy_delivered: Mapped[Optional[bool]] = mapped_column(Boolean)
     comments: Mapped[Optional[str]] = mapped_column(String)
-    status: Mapped[str] = mapped_column(String(20), server_default="pending")
+    status: Mapped[str] = mapped_column(SAEnum('pending','paid','late','overdue','cancelled', name='payment_status_type', create_type=False), server_default="pending")
 
     policy: Mapped["Policy"] = relationship(back_populates="payments")
     collector: Mapped[Optional["Collector"]] = relationship(lazy="joined")
@@ -250,7 +250,7 @@ class Card(Base, TimestampMixin):
     current_holder: Mapped[str] = mapped_column(String(50))
     assignment_date: Mapped[date] = mapped_column(Date)
     seller_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("seller.id"))
-    status: Mapped[str] = mapped_column(String(20), server_default="active")
+    status: Mapped[str] = mapped_column(SAEnum('active','paid_off','cancelled','recovery', name='card_status_type', create_type=False), server_default="active")
 
     policy: Mapped["Policy"] = relationship(lazy="joined")
 

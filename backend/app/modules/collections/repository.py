@@ -1,6 +1,7 @@
 """
 Collections Module — Repository (DB queries)
 Claudy ✨ + Fer — 2026-03-02
+from sqlalchemy import String
 """
 from datetime import date, datetime
 from typing import Optional, List, Tuple
@@ -74,7 +75,7 @@ class CollectionRepository:
             search_term = f"%{search}%"
             query = query.where(
                 or_(
-                    func.cast(Policy.folio, literal("text")).ilike(search_term),
+                    func.cast(Policy.folio, String).ilike(search_term),
                     (Client.first_name + " " + Client.paternal_surname).ilike(search_term),
                 )
             )
